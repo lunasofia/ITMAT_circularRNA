@@ -31,19 +31,22 @@ my $EXON_DATA = 6;
 my $curGeneName;
 
 # The exons (in order) of the current gene, populated
-# as the file is parsed. 
+# as the file is parsed.
 my @exonList;
 
 # Hash to keep track of the pair locations already matched
 my %pairSet = ();
 
+
 while (my $nameline = <>) {
     my $dataline;
     if (!($dataline = <>)) {
-	# this would really be some kind of error...
-	last;
+	   #this would really be some kind of error...
+	   last;
     }
-    
+    chomp($dataline);
+    chomp($nameline);
+
     my @namelinevals = split(" ", $nameline);
 
     if($curGeneName ne $namelinevals[$GENE_NAME]) {
@@ -76,7 +79,7 @@ sub processGene {
 # was already in the list. Takes in two array references.
 sub addToAlreadyPaired {
     my $key = &makeLocDataString($_[0]) . &makeLocDataString($_[1]);
-    
+
     my $alreadyPaired = $pairSet{ $key };
 
     $pairSet{ $key } = 1;
@@ -88,7 +91,7 @@ sub addToAlreadyPaired {
 # chr1 134212701 134213049
 sub makeLocDataString {
     my $string;
-    
+
     for(my $i = $CHR; $i <= $EXON_END; $i++) {
 	$string .= $exonList[$_[0]]->[$i];
 	$string .= " ";
@@ -105,8 +108,8 @@ sub printPair {
 	    &printNameData($_[1]);
 	    print "\n";
 	    print "$exonList[$_[0]]->[$EXON_DATA]";
-	    print "$exonList[$_[1]]->[$EXON_DATA]";
-    
+	    print "$exonList[$_[1]]->[$EXON_DATA]\n";
+
 }
 
 # Takes in the index into the exon array of an exon and prints out
