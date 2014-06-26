@@ -18,14 +18,22 @@
 
 use strict;
 
-# Indices of the various information
+# Indices of the various information in the array of
+# exons for a particular gene.
 my $GENE_NAME = 0;
 my $EXON = 1;
 my $EXON_NUM = 2;
 my $CHR = 3;
 my $EXON_START = 4;
 my $EXON_END = 5;
-my $EXON_DATA = 6;
+my $SEQ = 6;
+
+# Indices of various information in the array of a
+# junction (the value in the hash).
+my $ORD = 0;
+my $LENGTH = 1;
+my $PRINT_INFO = 2;
+my $CONCAT_SEQ = 3;
 
 # The name of the current gene. Starts with ">".
 my $curGeneName;
@@ -34,8 +42,12 @@ my $curGeneName;
 # as the file is parsed. 
 my @exonList;
 
-# Hash to keep track of the pair locations already matched
-my %pairSet = ();
+# Hash to keep track of all matched pairs
+my %pairs = ();
+
+# Keeps track of how many have been processed, so that
+# everything can be kept in order.
+my $order = 0;
 
 while (my $nameline = <>) {
     my $dataline;
@@ -43,6 +55,8 @@ while (my $nameline = <>) {
 	# this would really be some kind of error...
 	last;
     }
+    chomp($dataline);
+    chomp($nameline);
     
     my @namelinevals = split(" ", $nameline);
 
@@ -57,67 +71,98 @@ while (my $nameline = <>) {
 &processGene;
 &clearExonList;
 
+&printAll;
+
 
 # processes the exons of a single gene, re-arranging in all
 # necessary ways and printing out the results.
 sub processGene {
     for(my $first = 0; $first <= $#exonList; $first++) {
 	for(my $second = 0; $second <= $first; $second++) {
-	    if(&addToAlreadyPaired($first, $second)) {
-		&printPair($first, $second);
+	    my $key = &makeKeyString($first, $second);
+	    
+	    # check if already a longer pairing at this junction
+	    my $oldVal = $pairs{ $key };
+	    if($oldVal ne 0) {
+		my $oldLen = $oldVal->[$LENGTH];
+		my $newLen = &getLength($first, $second);
+		if($oldLen >= $newLen) { next; }
 	    }
+
+	    $pairs{ $key } = &makeValueArray($first, $second);
 	}
     }
 }
 
-# Adds the given pair to the list of pairs already matched.
-# (Pair is given by indexing into the exonList array.)
-# Returns true if the addition was successful, false if the pair
-# was already in the list. Takes in two array references.
-sub addToAlreadyPaired {
-    my $key = &makeLocDataString($_[0]) . &makeLocDataString($_[1]);
-    
-    my $alreadyPaired = $pairSet{ $key };
-
-    $pairSet{ $key } = 1;
-    return 1 - $alreadyPaired; # 0 if already there
+# Takes in indices into the exon array for two exons and
+# returns the key for their junction. The key is in the
+# form: 
+# chr1.100:20
+sub makeKeyString {
+    return "$exonList[$_[0]]->[$CHR]" . "." 
+	. "$exonList[$_[0]]->[$EXON_END]" . ":" 
+	. "$exonList[$_[1]]->[$EXON_START]";
 }
 
-# Takes in indices into the exon array of a single exon. Prints
-# out a string to be the key to the exon pair map. String is in the form
-# chr1 134212701 134213049
-sub makeLocDataString {
-    my $string;
-    
-    for(my $i = $CHR; $i <= $EXON_END; $i++) {
-	$string .= $exonList[$_[0]]->[$i];
-	$string .= " ";
+
+# Takes in indices into the exon array for two exons and builds
+# the value array for their junction. Returns a reference to
+# the array. Also increments the order counter so that each value
+# array will have a unique order integer.
+sub makeValueArray {
+    my @array;
+
+    push @array, $order;
+    push @array, &getLength($_[0], $_[1]);
+    push @array, &makeNameDataString($_[0], $_[1]);
+    push @array, &makeSequenceString($_[0], $_[1]);
+
+    $order++;
+    return \@array;
+}
+
+# Takes in indices into the exon array for two exons and
+# returns the combined lengths of the exons
+sub getLength {
+    my $len1 = $exonList[$_[0]]->[$EXON_END] - $exonList[$_[0]]->[$EXON_START];
+    my $len2 = $exonList[$_[0]]->[$EXON_END] - $exonList[$_[0]]->[$EXON_START];
+
+    return $len1 + $len2;
+}
+
+# Takes in the indices into the exon array of two exons and
+# returns the info about the pair (to be used as a header for
+# the sequence information).
+sub makeNameDataString {
+    my $nameString = "$exonList[$_[0]]->[$GENE_NAME] ";
+    for(my $exNum = 0; $exNum <= 1; $exNum++) {
+	for(my $i = $EXON; $i <= $EXON_END; $i++) {
+	    $nameString .= "$exonList[$_[$exNum]]->[$i] ";
+	}
     }
-
-    return $string;
+    return $nameString;
 }
 
-# Takes in the indices into the exon array of two exons (in order) and
-# prints out the information about that pair and the combined data.
-sub printPair {
-	    print "$curGeneName ";
-	    &printNameData($_[0]);
-	    &printNameData($_[1]);
-	    print "\n";
-	    print "$exonList[$_[0]]->[$EXON_DATA]";
-	    print "$exonList[$_[1]]->[$EXON_DATA]";
-    
-}
-
-# Takes in the index into the exon array of an exon and prints out
-# information about that exon.
-sub printNameData {
-    for(my $i = $EXON; $i <= $EXON_END; $i++) {
-	print "$exonList[$_[0]]->[$i] ";
-    }
+sub makeSequenceString {
+    return $exonList[$_[0]]->[$SEQ] . $exonList[$_[1]]->[$SEQ];
 }
 
 # Clears out the list of exons after a gene has been processed
 sub clearExonList {
     undef @exonList;
+}
+
+# Prints out all pairs in the hash. TODO: make this iterate in order
+sub printAll {
+    foreach my $val (sort {$a->[$ORD] <=> $b->[$ORD]} values %pairs) {
+	printEntry($val);
+    }
+}
+
+# Takes in a reference to a value array and prints out that junction
+sub printEntry {
+    print $_[0]->[$PRINT_INFO];
+    print "\n";
+    print $_[0]->[$CONCAT_SEQ];
+    print "\n";
 }
