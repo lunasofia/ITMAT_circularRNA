@@ -1,6 +1,6 @@
 # File: backwardsPairExons.pl
 # Author: S. Luna Frank-Fischer
-# ITMAT
+# ITMAT at UPenn
 # ----------------------------------------------
 # This program takes in a list of exons and, within
 # each gene, finds all out-of-order pairings of exons

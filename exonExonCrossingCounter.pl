@@ -24,8 +24,74 @@ my %exonLengths = ();
 
 &getExonLengths;
 
+my $RNAME = 2;
+my $POS = 3;
+my $CIGAR = 5;
+my $MIN_OVERLAP = 10;
+open my $sam_fh, '<', $SAM_FILE;
+while(my $line = <$sam_fh>) {
+    if($line =~ /^@/) { 
+	print "skipped header\n";
+	next;
+    }
+    chomp($line);
 
+    my @fieldVals = split(" ", $line);
 
+    my @nameArr = split(/\./, $fieldVals[$RNAME]);
+    if($#nameArr != 2) {
+#	print "invalid name field ($fieldVals[$RNAME])\n";
+	next;
+    }
+
+    my $key = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
+    my $firstExonLen = 
+	$exonLengths{ $key };
+    if(!$firstExonLen) { 
+#	print "no matching exon in length database ($fieldVals[$RNAME])\n";
+	next; 
+    }
+    
+    my $refAlignLength = getRefAlignLength($fieldVals[$CIGAR]);
+
+    my $firstExOverlap = $firstExonLen - $fieldVals[$POS]; # add 1??
+    if($firstExOverlap < $MIN_OVERLAP) { 
+#	print "not enough overlap on first exon. first overlap: $firstExOverlap\n";
+	next; 
+    }
+    if($refAlignLength - $firstExOverlap < $MIN_OVERLAP) {
+#	print "not enough overlap on second exon. first overlap: $firstExOverlap\n";
+	next; 
+    }
+
+    print "MATCH! $fieldVals[$RNAME] $fieldVals[$POS] ";
+    print "$fieldVals[$CIGAR]\n";
+    
+
+}
+close $sam_fh;
+
+# Given a CIGAR string, returns the length along
+# the reference of the match. This is found by
+# summing the M, N, D, X, and = values.
+sub getRefAlignLength {
+    my $len = 0;
+
+    my @values = split(/[MIDNSHPX=]/, $_[0]);
+    my @operations = split(/[0-9]+/, $_[0]);
+    
+    for(my $i = 0; $i <= $#values; $i++) {
+	if($operations[$i + 1] =~ /[MDNX=]/) {
+	    $len += $values[$i];
+	}
+	if($operations[$i + 1] =~ /[I]/) {
+	    $len -= $values[$i];
+	}
+    }
+
+    #print "$len\n";
+    return $len;
+}
 
 
 
@@ -51,12 +117,6 @@ sub getExonLengths {
 	$exonLengths{ $key } = $value;
     }
     close $exons_fh;
-
-    # TEST: printing
-    foreach my $key (keys %exonLengths) {
-	my $val = $exonLengths{ $key };
-	print "$key: $val\n";
-    }
 }
 
 # Given a gene name and exon number, returns the map
