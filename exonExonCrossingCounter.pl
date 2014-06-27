@@ -24,9 +24,11 @@ my %exonLengths = ();
 
 &getExonLengths;
 
+my $QNAME = 0;
 my $RNAME = 2;
 my $POS = 3;
 my $CIGAR = 5;
+my $SEQ = 9;
 my $MIN_OVERLAP = 10;
 open my $sam_fh, '<', $SAM_FILE;
 while(my $line = <$sam_fh>) {
@@ -64,8 +66,9 @@ while(my $line = <$sam_fh>) {
 	next; 
     }
 
-    print "MATCH! $fieldVals[$RNAME] $fieldVals[$POS] ";
-    print "$fieldVals[$CIGAR]\n";
+# TODO: figure out better output format!
+    print "MATCH! $fieldVals[$RNAME] $fieldVals[$POS]";
+    print "$fieldVals[$CIGAR] $fieldVals[$QNAME] $fieldVals[$SEQ]\n";
     
 
 }
