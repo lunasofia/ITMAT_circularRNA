@@ -20,8 +20,8 @@ my $FQ_SEQ = 1;
 my $FQ_PLUS = 2;
 my $FQ_QUAL = 3;
 
-while(<>) {
-    my @sVals = split($_);
+while(my $nameline = <>) {
+    my @sVals = split("\t", $nameline);
 
     # only copy over if isMapped returns 0 (false)
     if(&isMapped($sVals[$S_CIGAR]) == 0) {
