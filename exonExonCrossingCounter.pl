@@ -32,7 +32,7 @@ my $CIGAR = 5;
 my $SEQ = 9;
 
 my $MIN_OVERLAP = 10;
-my $MAX_QUALITY = 35; #0 is the best quality
+my $MAX_QUALITY = 255; #0 is the best quality
 
 my $matchCount = 0;
 
