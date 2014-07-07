@@ -28,6 +28,7 @@ my %unmatchedQueries;
 # the IDs of unmatched queries.
 open my $sam_fh, '<', $SAM_FILE;
 while(my $nameline = <$sam_fh>) {
+    if($nameline =~ /^@/) { next; }
     my @sVals = split("\t", $nameline);
 
     # only copy over if isMapped returns 0 (false)
