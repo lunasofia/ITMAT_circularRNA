@@ -11,6 +11,8 @@
 # 
 # The list of exons must be in the following format:
 # >GENE1 exon 1 chr1 00050 00100
+#
+# Prints in SAM format.
 
 use strict;
 
@@ -82,20 +84,17 @@ while(my $line = <$sam_fh>) {
         next;
     }
 
-    # Print out successful match
-    print "MATCH\n";
+#   Print out successful match
+#   print "MATCH\n";
     for(my $i = 0; $i <= $SEQ; $i++) {
-	print "$fieldVals[$i]\n";
+	print "$fieldVals[$i]\t";
     }
-    print "Overlap on first exon: $firstExOverlap\n";
-    print "1: $exonLengths{ $firstExonKey }->[0] to $exonLengths{ $firstExonKey }->[1]\n";
-    print "2: $exonLengths{ $secondExonKey }->[0] to $exonLengths{ $secondExonKey }->[1]\n\n";
     $matchCount++;
 }
 close $sam_fh;
 
-print "$insufOverlapCount matches with unsufficient overlap.\n";
-print "$matchCount scrambled-exon crossings.\n";
+#print "$insufOverlapCount matches with unsufficient overlap.\n";
+#print "$matchCount scrambled-exon crossings.\n";
 
 
 
