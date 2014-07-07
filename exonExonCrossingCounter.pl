@@ -142,7 +142,7 @@ sub makeExonLenVal {
 # Given a gene name and exon number, returns the map
 # key associated with that exon.
 # Keys are of the form gene_name exon_num
-# GENE1 4
+# GENE1-4
 sub makeExonLenKey {
     return "$_[0]-$_[1]";
 }
