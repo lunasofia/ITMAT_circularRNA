@@ -27,7 +27,6 @@ my %exonLengths = ();
 my $QNAME = 0;
 my $RNAME = 2;
 my $POS = 3;
-my $QUAL = 4;
 my $CIGAR = 5;
 my $SEQ = 9;
 
@@ -35,31 +34,43 @@ my $MIN_OVERLAP = 10;
 my $MAX_QUALITY = 255; #0 is the best quality
 
 my $matchCount = 0;
+my $insufOverlapCount = 0;
 
 open my $sam_fh, '<', $SAM_FILE;
 while(my $line = <$sam_fh>) {
-    if($line =~ /^@/) { next; }
+    if($line =~ /^@/) { next; } # make sure not to use header lines
     chomp($line);
 
     my @fieldVals = split(" ", $line);
 
-    my @nameArr = split(/\./, $fieldVals[$RNAME]);
+    my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { next; }
 
-    if($fieldVals[$QUAL] > $MAX_QUALITY) { next; }
-
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
-    my $firstExonLen = 
-	$exonLengths{ $firstExonKey }->[2];
-    if(!$firstExonLen) { next; }
+    my $firstExonLen =
+        $exonLengths{ $firstExonKey }->[2];
+    if(!$firstExonLen) {
+        print "ERROR failure to find: $firstExonKey\n";
+        next;
+    }
 
     my $secondExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[2]);
+    if(!($exonLengths{ $secondExonKey }->[0])) {
+        print "ERROR failure to find (2nd): $secondExonKey\n";
+        next;
+    }
 
     my $refAlignLength = getRefAlignLength($fieldVals[$CIGAR]);
 
-    my $firstExOverlap = $firstExonLen - $fieldVals[$POS]; # add 1??
-    if($firstExOverlap < $MIN_OVERLAP) { next; }
-    if($refAlignLength - $firstExOverlap < $MIN_OVERLAP) { next; }
+    my $firstExOverlap = $firstExonLen - $fieldVals[$POS];
+    if($firstExOverlap < $MIN_OVERLAP) {
+        $insufOverlapCount++;
+        next;
+    }
+    if($refAlignLength - $firstExOverlap < $MIN_OVERLAP) {
+        $insufOverlapCount++;
+        next;
+    }
 
     print "MATCH!\n";
     for(my $i = 0; $i <= $SEQ; $i++) {
@@ -71,6 +82,7 @@ while(my $line = <$sam_fh>) {
     $matchCount++;
 }
 
+print "$insufOverlapCount had too little overlap\n";
 print "$matchCount matches\n";
 close $sam_fh;
 
@@ -109,12 +121,11 @@ sub getExonLengths {
 
     open my $exons_fh, '<', $EXONS_FILE;
     while(my $nameline = <$exons_fh>) {
-	my $dataline = <$exons_fh>;
 	chomp($nameline);
 	
 	my @namelinevals = split(" ", $nameline);
 	
-	my $key = makeExonLenKey($namelinevals[$GENE_NAME], $namelinevals[$EXON_NUM]);
+	my $key = &makeExonLenKey($namelinevals[$GENE_NAME], $namelinevals[$EXON_NUM]);
 	my $value_arr = &makeExonLenVal($namelinevals[$EXON_START], $namelinevals[$EXON_END]);
 	
 	$exonLengths{ $key } = $value_arr;
@@ -133,5 +144,5 @@ sub makeExonLenVal {
 # Keys are of the form gene_name exon_num
 # GENE1 4
 sub makeExonLenKey {
-    return "$_[0] $_[1]";
+    return "$_[0]-$_[1]";
 }
