@@ -24,6 +24,8 @@ my $FQ_QUAL = 3;
 # Hash to keep track of entries (by query ID)
 my %unmatchedQueries;
 
+# First, iterates through SAM file and makes a list of
+# the IDs of unmatched queries.
 open my $sam_fh, '<', $SAM_FILE;
 while(my $nameline = <$sam_fh>) {
     my @sVals = split("\t", $nameline);
@@ -35,6 +37,8 @@ while(my $nameline = <$sam_fh>) {
 }
 close $sam_fh;
 
+# Next, iterates through the FastQ file and prints out
+# any entries with IDs matching an unmatched entry.
 open my $fq_fh, '<', $FQ_FILE;
 while(my $line = <$fq_fh>) {
     if($. % 4 != 1) { next; } #only look at lines with IDs
