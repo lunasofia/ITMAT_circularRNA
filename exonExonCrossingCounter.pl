@@ -89,6 +89,7 @@ while(my $line = <$sam_fh>) {
     for(my $i = 0; $i <= $SEQ; $i++) {
 	print "$fieldVals[$i]\t";
     }
+    print "\n";
     $matchCount++;
 }
 close $sam_fh;
