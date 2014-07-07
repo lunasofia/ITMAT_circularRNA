@@ -2,16 +2,15 @@
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # -------------------------------------------
-# This program takes in the SAM file list of matches
-# for a scrambled exon database. Each gene name must be 
-# in the format:
-# FORMAT HERE. WHAT IS THE FORMAT?
 # Counts the number of crossings for each scrambled pair.
 #
 # Takes in two files. The first is the list of exons for
 # each gene, which is used to gather information about
 # the lengths of the exons. The second is the SAM file
 # of matches.
+# 
+# The list of exons must be in the following format:
+# >GENE1 exon 1 chr1 00050 00100
 
 use strict;
 
@@ -22,45 +21,57 @@ my ($EXONS_FILE, $SAM_FILE) = @ARGV;
 # GENE1 4
 my %exonLengths = ();
 
+# Fills the exonLengths hash with the exon info
+# file.
 &getExonLengths;
 
+# Constants to give the indices of various pieces
+# of information in the SAM format.
 my $QNAME = 0;
 my $RNAME = 2;
 my $POS = 3;
 my $CIGAR = 5;
 my $SEQ = 9;
 
+# Minimum required overlap for a crossing to count
 my $MIN_OVERLAP = 10;
 
+# Variables for keeping track of matches and cases of
+# insufficient overlap.
 my $matchCount = 0;
 my $insufOverlapCount = 0;
 
 open my $sam_fh, '<', $SAM_FILE;
 while(my $line = <$sam_fh>) {
-    if($line =~ /^@/) { next; } # make sure not to use header lines
+    # skip over header lines, which start with '@'
+    if($line =~ /^@/) { next; }
+    
     chomp($line);
-
     my @fieldVals = split(" ", $line);
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
-    if($#nameArr != 2) { next; }
+    if($#nameArr != 2) { 
+	print "ERROR incorrenctly formatted name: $fieldVals[$RNAME]\n";
+	next; 
+    }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
+    if(!($exonLengths{ $firstExonKey })) {
+        print "ERROR failure to find exon: $firstExonKey\n";
+        next;
+    }
     my $firstExonLen =
         $exonLengths{ $firstExonKey }->[2];
-    if(!$firstExonLen) {
-        print "ERROR failure to find: $firstExonKey\n";
-        next;
-    }
+
 
     my $secondExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[2]);
-    if(!($exonLengths{ $secondExonKey }->[0])) {
-        print "ERROR failure to find (2nd): $secondExonKey\n";
+    if(!($exonLengths{ $secondExonKey })) {
+        print "ERROR failure to find exon: $secondExonKey\n";
         next;
     }
 
-    my $refAlignLength = getRefAlignLength($fieldVals[$CIGAR]);
-
+    # make sure there is sufficient overlap
+    my $refAlignLength = &getRefAlignLength($fieldVals[$CIGAR]);
     my $firstExOverlap = $firstExonLen - $fieldVals[$POS];
     if($firstExOverlap < $MIN_OVERLAP) {
         $insufOverlapCount++;
@@ -71,7 +82,8 @@ while(my $line = <$sam_fh>) {
         next;
     }
 
-    print "MATCH!\n";
+    # Print out successful match
+    print "MATCH\n";
     for(my $i = 0; $i <= $SEQ; $i++) {
 	print "$fieldVals[$i]\n";
     }
@@ -80,10 +92,13 @@ while(my $line = <$sam_fh>) {
     print "2: $exonLengths{ $secondExonKey }->[0] to $exonLengths{ $secondExonKey }->[1]\n\n";
     $matchCount++;
 }
-
-print "$insufOverlapCount had too little overlap\n";
-print "$matchCount matches\n";
 close $sam_fh;
+
+print "$insufOverlapCount matches with unsufficient overlap.\n";
+print "$matchCount scrambled-exon crossings.\n";
+
+
+
 
 # Given a CIGAR string, returns the length along
 # the reference of the match. This is found by
