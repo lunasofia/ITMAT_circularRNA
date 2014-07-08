@@ -2,69 +2,66 @@
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # ---------------------------------
-# Takes in two spreadsheet files and combines them into
-# a single file.
-# The files should have a header row with a "-" to start
-# and then a tab-delimited list of column names.
+# Takes in a series of filenames, each containing
+# a single data column. The first line of each file
+# is in the format:
+# -        colName
+#
+# Then the rest of the lines in the file are in the
+# format:
+# GENE1    12
 
 use strict;
 
-my @fh;
-my @curLines;
-my @ncols;
-for(my $i = 0; $i < 2; $i++) {
-    open $fh[$i], '<', $ARGV[$i];
-    $curLines[$i] = <$fh[$i]>;
-    my @header_vals = split("\t", $curLines[$i]);
-    
-    # index of the final entry is one less than total
-    # number of entries, which is number of columns
-    # with values
-    $ncols[$i] = $#header_vals;
+# Index of the current column being written.
+# Incremented by 1 every time first line of
+# a file is read in. Starts at -1 so that the
+# first line of the first file will push it
+# to 0.
+my $curDataArrIndex = -1;
+
+# Number of files inputted is number of columns
+my $nDataCols = $#ARGV + 1;
+
+# Key is gene name. Values are references to
+# arrays of length nDataCols.
+my %geneToData = ();
+
+while(<>) {
+    chomp($_);
+    my @lineVals = split("\t", $_);
+
+    # In case this is the first line of a file
+    if($lineVals[0] eq "-") {
+	$curDataArrIndex++;
+    }
+
+    # In case this ID is not yet in the hash
+    if(!$geneToData{ $lineVals[0] }) {
+	my @dataArr = (0) x $nDataCols;
+	$dataArr[$curDataArrIndex] = $lineVals[1];
+	$geneToData{ $lineVals[0] } = \@dataArr;
+    } else {
+	$geneToData{ $lineVals[0] }->[$curDataArrIndex] = $lineVals[1];
+    }
 }
 
-while($curLines[0] || $curLines[1]) {
-    # If one file is done, increment the
-    # other file.
-    if(!$curLines[0]) {
-	&printLines(0, 1);
-	next;
-    }
+my $headerArrRef = delete $geneToData{ "-" };
+print "-";
+&printDataVector($headerArrRef);
 
-    if(!$curLines[1]) {
-	&printLines(1, 0);
-	next;
-    }
-
-    if
+foreach my $key (keys %geneToData) {
+    print "$key";
+    printDataVector($geneToData{ $key });
 }
 
-sub printLines {
-    my @lineVals;
-    my $rowName;
-    for(my $i = 0; $i < 2; $i++) {
-	if($_[$i]) {
-	    $lineVals[$i] = \split("\t", $curLines[$i]);
-	    $rowName = $lineVals[$i]->[0];
-	    &nextLine($i);
-	} else {
-	    my @zeroArr = (0) x ($ncols[$i] + 1);
-	    $lineVals[$i] = \@zeroArr;
-	}
-    }
 
-    print "$rowName";
-    for(my $i = 0; $i < 2; $i++) {
-	for(my $col = 1; $col <= $ncols[$i]; $i++) {
-	    print "\tlineVals[$i]->[$col]";
-	}
+# Takes in a reference to a data vector and prints out the
+# contents. Starts with a tab (so previous print should not
+# include a tab).
+sub printDataVector {
+    for(my $i = 0; $i < $nDataCols; $i++) {
+	print "\t$_[0]->[$i]";
     }
     print "\n";
-}
-
-
-# Takes in either 0 or 1 and reads in the next line for that
-# file.
-sub nextLine {
-    $curLines[$_[0]] = <$fh[$_[0]]>;
 }
