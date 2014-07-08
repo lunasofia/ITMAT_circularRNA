@@ -1,0 +1,11 @@
+# File: removeSetFromFQ.pl
+# Author: S. Luna Frank-Fischer
+# ITMAT at UPenn
+# -------------------------------------------
+# Takes in as the first parameter a fastq files.
+# Takes in as the second parameter a file of
+# ID for searches (separated by newlines, no @
+# symbol prefix).
+#
+# Outputs a fastq with the entries corresponding
+# to those IDs removed.
