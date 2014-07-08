@@ -28,7 +28,7 @@ while(<$fq_fh>) {
     next if($. % $FQ_NUMLINES != 1);
     next if($idlist{ "$_" });
 
-    print $line;
+    print "$_";
     for(my $i = 1; $i < $FQ_NUMLINES; $i++) {
 	my $contentLine = <$fq_fh>;
 	chomp($contentLine);
