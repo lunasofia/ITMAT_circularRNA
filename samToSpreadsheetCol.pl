@@ -6,7 +6,9 @@
 # how many matches there are for a particular
 # template.
 # 
-# Output file not necessarily sorted.
+# Output file is always sorted alphabetically by
+# the name of the reference seq (except the header
+# line, which always is first)
 #
 # First line of output file is:
 # - COL_NAME
@@ -16,7 +18,6 @@ use strict;
 
 my $SAM_FILE = $ARGV[0];
 my $COL_NAME = $ARGV[1];
-my $TITLE_ROW_NAME = "-"; # name of first row
 
 # Index of reference sequence name in SAM format
 my $S_RNAME = 2;
@@ -42,8 +43,8 @@ while(my $line = <$sam_fh>) {
 }
 close $sam_fh;
 
-print "$TITLE_ROW_NAME\t$COL_NAME\n";
+print "-\t$COL_NAME\n";
 
-foreach my $rname (keys %hist) {
+foreach my $rname (sort keys %hist) {
     print "$rname\t$hist{$rname}\n";
 }
