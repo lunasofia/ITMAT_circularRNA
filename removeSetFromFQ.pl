@@ -17,7 +17,7 @@ my %idlist = ();
 # Read list of IDs into hash
 open my $idlist_fh, '<', $IDLIST_FILE;
 while(<$idlist_fh>) {
-    $idlist{ $_ } = 1;
+    $idlist{ "\@$_" } = 1;
 }
 close $idlist_fh;
 
@@ -26,12 +26,13 @@ open my $fq_fh, '<', $FQ_FILE;
 while(<$fq_fh>) {
     # skip if not an ID line or ID is in map
     next if($. % $FQ_NUMLINES != 1);
-    next if($idlist{ $_ });
+    next if($idlist{ "$_" });
 
     print $line;
     for(my $i = 1; $i < $FQ_NUMLINES; $i++) {
 	my $contentLine = <$fq_fh>;
-	print "$contentLine";
+	chomp($contentLine);
+	print "$contentLine\n";
     }
 }
 close $fq_fh;
