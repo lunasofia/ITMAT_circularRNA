@@ -1,4 +1,4 @@
-# File: exonExonCrossingCounter.pl
+# File: exonBoundaryCrossFilter.pl
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # -------------------------------------------
@@ -15,6 +15,7 @@
 # Prints in SAM format.
 
 use strict;
+
 
 my ($EXONS_FILE, $SAM_FILE) = @ARGV;
 
@@ -43,7 +44,7 @@ my $MIN_OVERLAP = 10;
 my $matchCount = 0;
 my $insufOverlapCount = 0;
 
-open my $sam_fh, '<', $SAM_FILE;
+open my $sam_fh, '<', $SAM_FILE or die "\nError: Could not open sam file.\n";
 while(my $line = <$sam_fh>) {
     # skip over header lines, which start with '@'
     if($line =~ /^@/) { next; }
@@ -53,14 +54,12 @@ while(my $line = <$sam_fh>) {
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { 
-	print "ERROR incorrenctly formatted name: $fieldVals[$RNAME]\n";
-	next; 
+	die "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
     }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
     if(!($exonLengths{ $firstExonKey })) {
-        print "ERROR failure to find exon: $firstExonKey\n";
-        next;
+        die "ERROR failure to find exon: $firstExonKey\n";
     }
     my $firstExonLen =
         $exonLengths{ $firstExonKey }->[2];
@@ -68,8 +67,7 @@ while(my $line = <$sam_fh>) {
 
     my $secondExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[2]);
     if(!($exonLengths{ $secondExonKey })) {
-        print "ERROR failure to find exon: $secondExonKey\n";
-        next;
+        die "ERROR failure to find exon: $secondExonKey\n";
     }
 
     # make sure there is sufficient overlap
@@ -93,10 +91,6 @@ while(my $line = <$sam_fh>) {
     $matchCount++;
 }
 close $sam_fh;
-
-#print "$insufOverlapCount matches with unsufficient overlap.\n";
-#print "$matchCount scrambled-exon crossings.\n";
-
 
 
 
@@ -133,7 +127,7 @@ sub getExonLengths {
     my $EXON_START = 4;
     my $EXON_END = 5;
 
-    open my $exons_fh, '<', $EXONS_FILE;
+    open my $exons_fh, '<', $EXONS_FILE or die "\nError: could not open exon info file.\n";
     while(my $nameline = <$exons_fh>) {
 	chomp($nameline);
 	
