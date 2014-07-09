@@ -9,6 +9,8 @@
 #
 # Outputs a fastq with the entries corresponding
 # to those IDs removed.
+#
+# TODO: put in nicer commandline parsing, error checking
 
 my ($FQ_FILE, $IDLIST_FILE) = @ARGV;
 
