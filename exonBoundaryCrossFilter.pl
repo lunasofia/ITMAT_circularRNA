@@ -15,9 +15,18 @@
 # Prints in SAM format.
 
 use strict;
+use Getopt::Long;
 
+my $USAGE = "Usage:\n perl exonBoundaryCrossFilter.pl " .
+    "--exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\"\n";
 
-my ($EXONS_FILE, $SAM_FILE) = @ARGV;
+my ($EXONS_FILE, $SAM_FILE, $help);
+GetOptions('help|?' => \$help,
+	   'exon-info-filename=s' => \$EXONS_FILE,
+	   'sam-filename=s' => \$SAM_FILE);
+
+die "$USAGE" if $help;
+die "$USAGE" unless ($EXONS_FILE && $SAM_FILE);
 
 # Hash to keep track of exon lengths.
 # Key format is gene_name exon_num
