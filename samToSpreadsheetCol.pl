@@ -15,9 +15,21 @@
 # where COL_NAME is the second input to the program.
 
 use strict;
+use Getopt::Long;
 
-my $SAM_FILE = $ARGV[0];
-my $COL_NAME = $ARGV[1];
+my $USAGE = "Usage:\n perl samToSpreadsheetCol --sam-filename=\"filename.sam\" ";
+my $USAGE = $USAGE . "[--column-titles=col1]\n";
+my $help;
+
+my $SAM_FILE;
+my $COL_NAME;
+
+GetOptions('help|?' => \$help,
+	   'sam-filename=s' => \$SAM_FILE,
+	   'column-titles=s' =>\$COL_NAME);
+die "$USAGE" if $help;
+die "$USAGE" unless $SAM_FILE;
+$COL_NAME = $SAM_FILE unless $COL_NAME;
 
 # Index of reference sequence name in SAM format
 my $S_RNAME = 2;
@@ -27,7 +39,7 @@ my $S_RNAME = 2;
 # many times that name has been seen.
 my %hist = ();
 
-open my $sam_fh, '<', $SAM_FILE;
+open my $sam_fh, '<', $SAM_FILE or die "\nError: could not open sam file.\n";
 while(my $line = <$sam_fh>) {
    chomp($line);
    if($line =~ /^@/) { next; }
