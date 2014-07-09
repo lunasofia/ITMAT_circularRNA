@@ -11,6 +11,8 @@
 # format:
 # GENE1    12
 
+# TODO: how do I want error checking to work here?
+
 use strict;
 
 # Index of the current column being written.
