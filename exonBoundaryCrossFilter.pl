@@ -21,9 +21,11 @@ my $USAGE = "Usage:\n perl exonBoundaryCrossFilter.pl " .
     "--exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\"\n";
 
 my ($EXONS_FILE, $SAM_FILE, $help);
+my $MIN_OVERLAP = 10;
 GetOptions('help|?' => \$help,
 	   'exon-info-filename=s' => \$EXONS_FILE,
-	   'sam-filename=s' => \$SAM_FILE);
+	   'sam-filename=s' => \$SAM_FILE
+	   'min-overlap=i' => \$MIN_OVERLAP);
 
 die "$USAGE" if $help;
 die "$USAGE" unless ($EXONS_FILE && $SAM_FILE);
@@ -44,9 +46,6 @@ my $RNAME = 2;
 my $POS = 3;
 my $CIGAR = 5;
 my $SEQ = 9;
-
-# Minimum required overlap for a crossing to count
-my $MIN_OVERLAP = 10;
 
 # Variables for keeping track of matches and cases of
 # insufficient overlap.
