@@ -17,8 +17,6 @@
 use strict;
 use Getopt::Long;
 
-my $USAGE = "Usage:\n perl samToSpreadsheetCol --sam-filename=\"filename.sam\" ";
-my $USAGE = $USAGE . "[--column-titles=col1]\n";
 my $help;
 
 my $SAM_FILE;
@@ -27,8 +25,8 @@ my $COL_NAME;
 GetOptions('help|?' => \$help,
 	   'sam-filename=s' => \$SAM_FILE,
 	   'column-titles=s' =>\$COL_NAME);
-die "$USAGE" if $help;
-die "$USAGE" unless $SAM_FILE;
+&usage if $help;
+&usage unless $SAM_FILE;
 $COL_NAME = $SAM_FILE unless $COL_NAME;
 
 # Index of reference sequence name in SAM format
@@ -59,4 +57,11 @@ print "-\t$COL_NAME\n";
 
 foreach my $rname (sort keys %hist) {
     print "$rname\t$hist{$rname}\n";
+}
+
+sub usage {
+
+die "Usage:
+perl samToSpreadsheetCol--sam-filename=\"filename.sam\" [--column-titles=col1]
+";
 }
