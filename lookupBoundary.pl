@@ -125,6 +125,7 @@ my $S_RNAME = 2;
 my $S_POS = 3;
 my $S_SEQ = 9;
 foreach my $SAM_FILE (@SAM_FILES) {
+    my $samFound;
     open my $sam_fh, '<', $SAM_FILE or die "Error: could not open $SAM_FILE\n";
     while(my $line = <$sam_fh>) {
 	# skip header lines, which start with '@'
@@ -133,7 +134,7 @@ foreach my $SAM_FILE (@SAM_FILES) {
 	chomp($line);
 	my @vals = split(" ", $line);
 	
-	next unless($vals[$S_RNAME] = $BOUNDARY);
+	next unless($vals[$S_RNAME] eq $BOUNDARY);
 	
 	my $firstExonOverlap = $firstExonLen - $vals[$S_POS];
 	
@@ -144,9 +145,11 @@ foreach my $SAM_FILE (@SAM_FILES) {
 	print "\t\tSequence: $vals[$S_SEQ]\n";
 	
 	# Only find one match from each file
+	$samFound = 1;
 	last;
     }
     close $sam_fh;
+    print "\tNo match in $SAM_FILE\n" unless $samFound;
 }
 print "\n";
 
