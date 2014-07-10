@@ -55,14 +55,14 @@ while(my $line = <$sam_fh>) {
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { 
-	carp "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
+	warn "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
 	next;
     }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
     my $firstExonLen = $exonLengths{ $firstExonKey };
     unless($firstExonLen) {
-        carp "ERROR: failure to find exon: $firstExonKey\n";
+        warn "ERROR: failure to find exon: $firstExonKey\n";
 	next;
     }
 
