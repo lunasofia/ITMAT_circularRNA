@@ -21,11 +21,12 @@
 use strict;
 use Getopt::Long;
 
-my ($MATCHES_FILE, $EXONS_FILE, $BOUNDARY, @SAM_FILES, $help);
+my ($MATCHES_FILE, $EXONS_FILE, $BOUNDARY, @SAM_FILES, $ALL_SAM, $help);
 GetOptions('sam-filename=s' => \@SAM_FILES,
 	   'matches-spreadsheet=s' => \$MATCHES_FILE,
 	   'exon-database=s' => \$EXONS_FILE,
 	   'boundary-name=s' => \$BOUNDARY,
+	   'all-sam' => \$ALL_SAM,
 	   'help|?' => \$help);
 
 &usage if $help;
@@ -123,6 +124,7 @@ print "Information from SAM files...\n";
 my $S_QNAME = 0;
 my $S_RNAME = 2;
 my $S_POS = 3;
+my $S_CIGAR = 5;
 my $S_SEQ = 9;
 foreach my $SAM_FILE (@SAM_FILES) {
     my $samFound;
@@ -141,12 +143,14 @@ foreach my $SAM_FILE (@SAM_FILES) {
 	print "\tMatch in $SAM_FILE:\n";
 	print "\t\tQuery ID: $vals[$S_QNAME]\n";
 	print "\t\tStarting at position: $vals[$S_POS]\n";
+	print "\t\tCIGAR string: $vals[$S_CIGAR]\n";
 	print "\t\tOverlap on first exon: $firstExonOverlap\n";
 	print "\t\tSequence: $vals[$S_SEQ]\n";
 	
-	# Only find one match from each file
 	$samFound = 1;
-	last;
+	
+        # Only find one match from each file, unless specified
+	last unless $ALL_SAM;
     }
     close $sam_fh;
     print "\tNo match in $SAM_FILE\n" unless $samFound;
@@ -160,20 +164,24 @@ Looks up information associated with a boundary between
 two exons, given various files of information.
 
 Necessary flags:
---matches-spreadsheet (-m)
+--matches-spreadsheet (-m) <filename>
      file containing names of exon junctions and the frequencies
      with which they appeared in various samples
---exon-database (-e)
+--exon-database (-e) <filename>
      file containing names of exons and their locations on the
      genome. Same format as name line of fasta file.
---boundary-name (-b)
+--boundary-name (-b) <string>
      in the format GENENAME-2-1 or something, where GENENAME is
      the name of the gene and the numbers are the exons. (Must
      be separated by dashes. Gene name cannot have dashes.)
 
 Optional flags:
---sam-filename (-s)
+--sam-filename (-s) <filename>
      as many SAM files as desired can be specified by
      repeating this flag.
+--all-sam (-a)
+     if specified, all matches from each SAM file is printed,
+     instead of default (print just 1).
+
 "
 }
