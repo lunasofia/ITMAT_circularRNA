@@ -19,7 +19,7 @@ use warnings;
 use Getopt::Long;
 
 my ($EXONS_FILE, $SAM_FILE, $help);
-my $MIN_OVERLAP = 10;
+my $MIN_OVERLAP = 30;
 GetOptions('help|?' => \$help,
 	   'exon-info-filename=s' => \$EXONS_FILE,
 	   'sam-filename=s' => \$SAM_FILE,
@@ -156,6 +156,7 @@ sub usage {
 
  Prints in SAM format.
 
-Usage:\n perl exonBoundaryCrossFilter.pl --exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\"\n"
+ Usage:\n perl exonBoundaryCrossFilter.pl --exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\" [--min-overlap=40]
 
+"
 }
