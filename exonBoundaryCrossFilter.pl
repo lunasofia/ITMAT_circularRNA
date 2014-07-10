@@ -55,13 +55,15 @@ while(my $line = <$sam_fh>) {
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { 
-	die "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
+	carp "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
+	next;
     }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
     my $firstExonLen = $exonLengths{ $firstExonKey };
     unless($firstExonLen) {
-        die "ERROR: failure to find exon: $firstExonKey\n";
+        carp "ERROR: failure to find exon: $firstExonKey\n";
+	next;
     }
 
     # make sure there is sufficient overlap
