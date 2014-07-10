@@ -1,37 +1,60 @@
-This project is for my summer 2014 internship with ITMAT at UPenn.
+ITMAT at UPenn
+Garret FitzGerald Labs
+Summer 2014
+S. Luna Frank-Fischer
 
-The scripts work together with aligning software to find evidence of exon 
-shuffling.
+This pipeline searches for evidence of scrambled exons in RNA sequencing
+data.
 
-First, build a database of shuffled exons. To do this, start with a .fa file
-of genes and exons. Feed this file to backwardsPairExonsV2.pl. (Version 2 does
-a better job of getting rid of redundancy.) Its output is also in fa format,
-but needs some modification (to make unique IDs - need to get rid of spaces.)
+---------- HOW TO RUN THE PIPELINE ----------
+First, if a shuffled exon database has not yet been created, run the
+necessary scripts to build a shuffled exon database. (NOTE: this is
+not yet complete - these scripts are still not fully functional!)
 
-In order to match a sample to this database, do the following:
+Also, to get the list of ribosomal IDs, see the process outlined at
+https://github.com/itmat/Normalization and use the first step.
 
-1. Start with a fastq file of sequenced RNA and a *regular* database for the
-genome. Match up using star with the following commands:
---outSAMunmapped Within
---outFilterMultimapNmax 100000
---genomeDir yourgenomedir/
---readFilesIn yoursamples.fq
---outFilterMatchNminOverLread .75
-(the match minimum can be adjusted depending on how much you want to filter)
-This will give you an out file in SAM format.
+Also, make sure to have BWA installed. The path to run BWA must be 
+specified in the command to run the pipeline.
 
-2. Run unmatchedFromSam.pl with the SAM file and a the original fq file as
-inputs. This spits out a fq file with the unmatched reads.
+Next, make sure that directories are in the following structure:
 
-3. Align this fq file using BWA using the following two commands:
-bwa aln exon-exon_shuffled.fa unmatched.out.fq > read.sai
-bwa samse exon-exon_shuffled.fa read.sai unmatched.out.fq > aln.sam
+READS/
+   |--- ids.txt
+   |--- Sample_1/
+	Sample_1_forward.fq
+	   |--- Sample_1_reverse.fq
+	   |--- Sample_1.ribosomalids.txt
+   |--- Sample_2/
+	   |--- Sample_2_forward.fq
+	   |--- Sample_2_reverse.fq
+	   |--- Sample_2.ribosomalids.txt
 
-4. Get rid of all but 100M (easy to do with grep).
+"READS/" can be replaced by any path, and is specified in the command.
+"Sample_1" and "Sample_2" are both IDs, and could be any string (but no
+two samples can have the same ID). The file ids.txt MUST be named ids.txt,
+and contains a list of the IDs to be processed. In this example, then,
+ids.txt would contain:
 
-5. Run exonExonCrossingCounter.pl with the exon info file (which is only the
-title line, not the sequence, from the .fa file) and the sam file of unmatched
-reads as input. This will output any reads which cross a reversed exon-exon
-boundary by more than some number of base pairs. (That number can be adjusted
-in the script.)
+Sample_1
+Sample_2
 
+and no other lines.
+
+
+---------- ABOUT THE PIPELINE ----------
+The pipeline consists of the following main stages:
+1. Remove rRNA matches
+2. Remove regular matches with STAR (optional)
+3. Normalize number of reads
+4. Align to shuffled exon database
+5. Select well-aligned entries (optional)
+6. Remove entries not crossing exon-exon boundaries
+7. Create frequency spreadsheet
+
+
+---------- ABOUT THE PROJECT ----------
+This is my summer internship project. I'm working at the Garret FitzGerald
+lab at UPenn. I'm working under Greg Grant, whose help has been absolutely
+crucial in creating this pipeline. I also received plenty of help from other 
+members of Greg's team.
