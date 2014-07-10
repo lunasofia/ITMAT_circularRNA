@@ -5,10 +5,6 @@
 # Takes in a SAM file and outputs a histogram of
 # how many matches there are for a particular
 # template.
-# 
-# Output file is always sorted alphabetically by
-# the name of the reference seq (except the header
-# line, which always is first)
 #
 # First line of output file is:
 # - COL_NAME
@@ -24,7 +20,7 @@ my $COL_NAME;
 
 GetOptions('help|?' => \$help,
 	   'sam-filename=s' => \$SAM_FILE,
-	   'column-titles=s' =>\$COL_NAME);
+	   'column-title=s' =>\$COL_NAME);
 &usage if $help;
 &usage unless $SAM_FILE;
 $COL_NAME = $SAM_FILE unless $COL_NAME;
@@ -60,8 +56,12 @@ foreach my $rname (sort keys %hist) {
 }
 
 sub usage {
+die "
+ Takes in a SAM file and outputs a histogram of
+ how many matches there are for a particular
+ template.
 
-die "Usage:
-perl samToSpreadsheetCol--sam-filename=\"filename.sam\" [--column-titles=col1]
+ Usage: perl samToSpreadsheetCol --sam-filename=\"filename.sam\" [--column-title=col1]
+
 ";
 }
