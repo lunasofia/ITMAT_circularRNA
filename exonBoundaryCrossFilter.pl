@@ -15,20 +15,18 @@
 # Prints in SAM format.
 
 use strict;
+use warnings;
 use Getopt::Long;
-
-my $USAGE = "Usage:\n perl exonBoundaryCrossFilter.pl " .
-    "--exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\"\n";
 
 my ($EXONS_FILE, $SAM_FILE, $help);
 my $MIN_OVERLAP = 10;
 GetOptions('help|?' => \$help,
 	   'exon-info-filename=s' => \$EXONS_FILE,
-	   'sam-filename=s' => \$SAM_FILE
+	   'sam-filename=s' => \$SAM_FILE,
 	   'min-overlap=i' => \$MIN_OVERLAP);
 
-die "$USAGE" if $help;
-die "$USAGE" unless ($EXONS_FILE && $SAM_FILE);
+&usage if $help;
+&usage  unless ($EXONS_FILE && $SAM_FILE);
 
 # Hash to keep track of exon lengths.
 # Key format is gene_name exon_num
@@ -47,11 +45,6 @@ my $POS = 3;
 my $CIGAR = 5;
 my $SEQ = 9;
 
-# Variables for keeping track of matches and cases of
-# insufficient overlap.
-my $matchCount = 0;
-my $insufOverlapCount = 0;
-
 open my $sam_fh, '<', $SAM_FILE or die "\nError: Could not open sam file.\n";
 while(my $line = <$sam_fh>) {
     # skip over header lines, which start with '@'
@@ -66,37 +59,19 @@ while(my $line = <$sam_fh>) {
     }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
-    if(!($exonLengths{ $firstExonKey })) {
-        die "ERROR failure to find exon: $firstExonKey\n";
-    }
-    my $firstExonLen =
-        $exonLengths{ $firstExonKey }->[2];
-
-
-    my $secondExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[2]);
-    if(!($exonLengths{ $secondExonKey })) {
-        die "ERROR failure to find exon: $secondExonKey\n";
+    my $firstExonLen = $exonLengths{ $firstExonKey };
+    unless($firstExonLen) {
+        die "ERROR: failure to find exon: $firstExonKey\n";
     }
 
     # make sure there is sufficient overlap
     my $refAlignLength = &getRefAlignLength($fieldVals[$CIGAR]);
     my $firstExOverlap = $firstExonLen - $fieldVals[$POS];
-    if($firstExOverlap < $MIN_OVERLAP) {
-        $insufOverlapCount++;
-        next;
-    }
-    if($refAlignLength - $firstExOverlap < $MIN_OVERLAP) {
-        $insufOverlapCount++;
-        next;
-    }
+    next if($firstExOverlap < $MIN_OVERLAP);
+    next if($refAlignLength - $firstExOverlap < $MIN_OVERLAP);
 
-#   Print out successful match
-#   print "MATCH\n";
-    for(my $i = 0; $i <= $SEQ; $i++) {
-	print "$fieldVals[$i]\t";
-    }
-    print "\n";
-    $matchCount++;
+    # if sufficient overlap, print out line
+    print "$line\n";
 }
 close $sam_fh;
 
@@ -111,6 +86,7 @@ sub getRefAlignLength {
     my @values = split(/[MIDNSHPX=]/, $_[0]);
     my @operations = split(/[0-9]+/, $_[0]);
     
+    # Off-by-one is because of details of split.
     for(my $i = 0; $i <= $#values; $i++) {
 	if($operations[$i + 1] =~ /[MDNX=]/) {
 	    $len += $values[$i];
@@ -120,7 +96,6 @@ sub getRefAlignLength {
 	}
     }
 
-    #print "$len\n";
     return $len;
 }
 
@@ -139,16 +114,19 @@ sub getExonLengths {
     while(my $nameline = <$exons_fh>) {
 	chomp($nameline);
 	
-	my @namelinevals = split(" ", $nameline);
+	my @namelineVals = split(" ", $nameline);
 	
-	my $key = &makeExonLenKey($namelinevals[$GENE_NAME], $namelinevals[$EXON_NUM]);
-	my $value_arr = &makeExonLenVal($namelinevals[$EXON_START], $namelinevals[$EXON_END]);
+	my $key = &makeExonLenKey($namelineVals[$GENE_NAME], $namelineVals[$EXON_NUM]);
+	my $value = $namelineVals[$EXON_END] - $namelineVals[$EXON_START];
 	
-	$exonLengths{ $key } = $value_arr;
+	$exonLengths{ $key } = $value;
     }
     close $exons_fh;
 }
 
+# Given the start and end locations of an exon, makes an array with the
+# start and end values and the length of the exon. Returns a reference
+# to that array.
 sub makeExonLenVal {
     my @valArr = @_;
     push @valArr, $_[1] - $_[0];
@@ -161,4 +139,23 @@ sub makeExonLenVal {
 # GENE1-4
 sub makeExonLenKey {
     return "$_[0]-$_[1]";
+}
+
+
+sub usage {
+    die "
+ Counts the number of crossings for each scrambled pair.
+
+ Takes in two files. The first is the list of exons for
+ each gene, which is used to gather information about
+ the lengths of the exons. The second is the SAM file
+ of matches.
+ 
+ The list of exons must be in the following format:
+ >GENE1 exon 1 chr1 00050 00100
+
+ Prints in SAM format.
+
+Usage:\n perl exonBoundaryCrossFilter.pl --exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\"\n"
+
 }
