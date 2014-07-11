@@ -7,7 +7,9 @@
 # The directories must be arranged in the following structure:
 #
 # READS/
-#   |--- ids.txt
+#   |---ids.txt
+#   |---exon_info.txt
+#   |---scrambled_exon_database.fa
 #   |--- Sample_1/
 #           |--- Sample_1_forward.fq
 #           |--- Sample_1_reverse.fq
@@ -27,10 +29,6 @@
 # --reads-path (-r) <path/>
 #     This specifies the directory containing the
 #     ids.txt file and the files with the samples.
-# --exon-info-file (-e) <path/filename>
-#     This specifies the file (either fastA or in a
-#     similar format, with the sequence lines removed)
-#     to be used for info about the exons
 #
 # Optional Flags:
 # --scripts-path (-s) <path/>
@@ -58,14 +56,13 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my ($BWA_PATH, $READS_PATH, $EXON_FILE,
+my ($BWA_PATH, $READS_PATH,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
     $GENOME, $help, $verbose);
 GetOptions('help|?' => \$help,
 	   'verbose' => \$verbose,
 	   'bwa-path=s' => \$BWA_PATH,
 	   'reads-path=s' => \$READS_PATH,
-	   'exon-info-file=s' => \$EXON_FILE,
 	   'scripts-path=s' => \$SCRIPTS_PATH,
 	   'min-overlap=i' => \$MIN_OVERLAP,
 	   'prealign-star=s' => \$STAR_PATH,
@@ -75,7 +72,7 @@ GetOptions('help|?' => \$help,
 # add "/" to end of directory names if not already
 # there.
 &usage if $help;
-&usage unless ($BWA_PATH && $READS_PATH && $EXON_FILE);
+&usage unless ($BWA_PATH && $READS_PATH);
 if($STAR_PATH) {
     &usage unless $GENOME;
     $STAR_PATH .= "/" unless $STAR_PATH =~ /\/$/;
@@ -178,7 +175,27 @@ print "STATUS: Done equalizing number of reads\n\n";
 
 foreach my $id (@ids) {
     # ----------- ALIGN TO SHUFFLED DATABASE -----------
-    # DO LATER
+    print "STATUS: Aligning to shuffled exon database.\n";
+    foreach my $direction (@DIRECTIONS) {
+	my $command = $BWA_PATH;
+	$command .= "bwa aln ${READS_PATH}scrambled_exon_database.fa ";
+	$command .= "$READS_PATH$id/${direction}_equalized.fq";
+	$command .= " > $READS_PATH$id/${direction}_reads.sai";
+	my $err = system($command);
+	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+	
+	my $command2 = $BWA_PATH;
+	$command2 .= "bwa samse ${READS_PATH}scrambled_exon_database.fa ";
+	$command2 .= "$READS_PATH$id/${direction}_reads,sai ";
+	$command2 .= "$READS_PATH$id/${direction}_equalized.fq ";
+	$command2 .= "> $READS_PATH$id/${direction}_aligned.sam";
+	my $err = system($command2);
+	die "ERROR: call ($command2) failed with status $err. Exiting.\n\n" if $err;
+
+	print "\tSTATUS: Aligned $id $direction.\n" if $verbose;
+
+    }
+    print "STATUS: Done aligning to shuffled exon database.\n";
     # ----------- done aligning to shuffled database -----------
 
 
@@ -187,7 +204,7 @@ foreach my $id (@ids) {
     foreach my $direction (@DIRECTIONS) {
 	my $command = $PERL_PREFIX;
 	$command .= "exonBoundaryCrossFilter.pl ";
-	$command .= "--exon-info-file $EXON_FILE ";
+	$command .= "--exon-info-file ${READS_PATH}exon_info.txt ";
 	$command .= "--sam-file $READS_PATH$id/${direction}_aligned.sam ";
 	$command .= "--min-overlap $MIN_OVERLAP " if $MIN_OVERLAP;
 	$command .= "> $READS_PATH$id/${direction}_finalmatch.sam";
@@ -210,13 +227,13 @@ foreach my $id (@ids) {
 
     # ----------- CONVERT TO FREQUENCY COLUMN ----------
     print "STATUS: Converting to frequency column.\n";
-    my $command = $PERL_PREFIX;
-    $command .= "samToSpreadsheetCol.pl ";
-    $command .= "--sam-filename $READS_PATH$id/together_finalmatch.sam ";
-    $command .= "--column-title $id ";
-    $command .= "> $READS_PATH$id/frequencies.txt";
-    my $err = system($command);
-    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+    my $command2 = $PERL_PREFIX;
+    $command2 .= "samToSpreadsheetCol.pl ";
+    $command2 .= "--sam-filename $READS_PATH$id/together_finalmatch.sam ";
+    $command2 .= "--column-title $id ";
+    $command2 .= "> $READS_PATH$id/frequencies.txt";
+    my $err = system($command2);
+    die "ERROR: call ($command2) failed with status $err. Exiting.\n\n" if $err;
     print "\tSTATUS: samToSpreadsheetCol ran successfully.\n" if $verbose;
     print "STATUS: Done converting to frequency column.\n\n";
     # ----------- done converting to column ----------
@@ -251,10 +268,6 @@ die "
  --read-directory (-r) <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
- --exon-info-file (-e) <path/filename>
-     This specifies the file (either fastA or in a
-     similar format, with the sequence lines removed)
-     to be used for info about the exons
      
  Optional Flags:
  --scripts-path (-s) <path/>
