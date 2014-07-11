@@ -5,8 +5,12 @@
 # Using reservoir sampling, selects a random set of an
 # fq file and writes it out, generating a new fq file
 # with a set number of entries.
+#
+# Description of reservoir sampling found on wikipedia.
+# http://en.wikipedia.org/wiki/Reservoir_sampling
 
 use strict;
+use warnings;
 use Getopt::Long;
 
 my $help;
@@ -59,10 +63,11 @@ print(join("\n", @reservoir));
 
 sub usage {
     die "
-Prints a random selection of lines from the given fastq file
-to standard out. Takes in the fastq file and the number of
-lines to print.
+ Prints a random selection of lines from the given fastq file
+ to standard out. Takes in the fastq file and the number of
+ lines to print.
 
-Usage: perl randSubsetFromFQ.pl --fq-filename=\"filename.fq\" --n-output-entries=1000
+ Usage: perl randSubsetFromFQ.pl --fq-filename=\"filename.fq\" --n-output-entries=1000
+
 "
 }

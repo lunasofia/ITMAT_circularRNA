@@ -3,13 +3,23 @@
 # ITMAT at UPenn
 # -----------------------------------
 # This program scans through a SAM file and finds
-# all unmapped entries. It then finds the corresponding
-# entries in the fastq file given (as the second
-# parameter) and prints those entries.
+# all unmapped entries. It then finds the
+# corresponding entries in the fastq file given
+# and prints those entries in fastq format.
+#
+# Usage: perl unmatchedFromSam --fastq-file="file.fq" --sam-file="file.sam"
 
 use strict;
+use warnings;
+use Getopt::Long;
 
-my ($SAM_FILE, $FQ_FILE) = @ARGV;
+my ($SAM_FILE, $FQ_FILE, $help);
+GetOptions('help|?' => \$help,
+	   'fastq-file=s' => \$FQ_FILE,
+	   'sam-file=s' => \$SAM_FILE);
+
+&usage if $help;
+&usage unless ($SAM_FILE && $FQ_FILE);
 
 # Indices of various information in the SAM file
 my $S_QNAME = 0;
@@ -44,9 +54,9 @@ open my $fq_fh, '<', $FQ_FILE or die "\nError: could not open fq file.\n";
 while(my $line = <$fq_fh>) {
     if($. % 4 != 1) { next; } #only look at lines with IDs
     my @IDLineArr = split(" ", $line);
-    my $key = @IDLineArr[0];
+    my $key = $IDLineArr[0];
 
-    if($unmatchedQueries{ $key } == 1) {
+    if($unmatchedQueries{ $key }) {
 	print $line;
 	for(my $i = 0; $i < 3; $i++) {
 	    my $contentLine = <$fq_fh>;
@@ -64,4 +74,17 @@ sub isMapped {
 	return 0;
     }
     return 1;
+}
+
+
+sub usage {
+    die "
+ This program scans through a SAM file and finds
+ all unmapped entries. It then finds the
+ corresponding entries in the fastq file given
+ and prints those entries in fastq format.
+
+ Usage: perl unmatchedFromSam --fastq-file=\"file.fq\" --sam-file=\"file.sam\"
+
+"
 }

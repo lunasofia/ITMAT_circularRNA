@@ -14,6 +14,7 @@
 # TODO: how do I want error checking to work here?
 
 use strict;
+use warnings;
 
 # Index of the current column being written.
 # Incremented by 1 every time first line of
@@ -48,18 +49,20 @@ while(<>) {
     }
 }
 
+# Print header
 my $headerArrRef = delete $geneToData{ "-" };
 print "-";
 &printDataVector($headerArrRef);
 
+# Print each data line
 foreach my $key (keys %geneToData) {
     print "$key";
-    printDataVector($geneToData{ $key });
+    &printDataVector($geneToData{ $key });
 }
 
 
 # Takes in a reference to a data vector and prints out the
-# contents. Starts with a tab (so previous print should not
+# contents. Starts with a tab (so previous print should NOT
 # include a tab).
 sub printDataVector {
     for(my $i = 0; $i < $nDataCols; $i++) {
