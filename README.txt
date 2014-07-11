@@ -22,7 +22,7 @@ Next, make sure that directories are in the following structure:
 READS/
    |--- ids.txt
    |--- Sample_1/
-	Sample_1_forward.fq
+ 	   |--- Sample_1_forward.fq
 	   |--- Sample_1_reverse.fq
 	   |--- Sample_1.ribosomalids.txt
    |--- Sample_2/
