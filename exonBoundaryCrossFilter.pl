@@ -45,6 +45,10 @@ my $POS = 3;
 my $CIGAR = 5;
 my $SEQ = 9;
 
+# Keep track of errors to be printed at end
+my $incorNamesCount = 0;
+my $noExonFoundCount = 0;
+
 open my $sam_fh, '<', $SAM_FILE or die "\nError: Could not open sam file.\n";
 while(my $line = <$sam_fh>) {
     # skip over header lines, which start with '@'
@@ -55,14 +59,14 @@ while(my $line = <$sam_fh>) {
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { 
-	warn "ERROR: incorrenctly formatted name: $fieldVals[$RNAME]\n";
+	$incorNamesCount++;
 	next;
     }
 
     my $firstExonKey = &makeExonLenKey(">$nameArr[0]", $nameArr[1]);
     my $firstExonLen = $exonLengths{ $firstExonKey };
     unless($firstExonLen) {
-        warn "ERROR: failure to find exon: $firstExonKey\n";
+        $noExonFoundCount++;
 	next;
     }
 
@@ -76,6 +80,9 @@ while(my $line = <$sam_fh>) {
     print "$line\n";
 }
 close $sam_fh;
+
+warn "WARNING: $incorNamesCount badly formed RNAME fields found\n" if $incorNamesCount;
+warn "WARNING: $noExonFoundCount exons not found\n" if $noExonFoundCount;
 
 
 

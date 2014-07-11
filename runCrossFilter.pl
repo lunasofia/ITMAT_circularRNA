@@ -17,6 +17,6 @@ use strict;
 foreach my $id (@ARGV) {
 #    `grep "100M" unnormalized_datasets/$id/BWA_aln.sam > unnormalized_datasets/$id/100M_aln.sam`;
 #    print "finished grep call for $id\n";
-    `perl scripts/exonBoundaryCrossFilter.pl -e exon_info_docs/mm9_ucsc_exons_info.txt -s unnormalized_datasets/$id/BWA_aln.sam -m 30 > unnormalized_datasets/$id/finalMatches_all.sam`;
+    `perl ITMAT_circularRNA/exonBoundaryCrossFilter.pl -e exon_info_docs/mm9_ucsc_exons_info.txt -s unnormalized_datasets/$id/BWA_aln.sam -m 30 > unnormalized_datasets/$id/finalMatches_all.sam`;
     print "finished full selection for $id\n";
 }

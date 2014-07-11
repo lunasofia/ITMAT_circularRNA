@@ -11,8 +11,8 @@ use warnings;
 
 my $colfile_list = "";
 foreach my $id (@ARGV) {
-    `perl samToSpreadsheetCol.pl -s unnormalized_datasets/$id/finalMatches.sam -c $id > unnormalized_datasets/$id/finalMatches.col`;
-    $colfile_list .= " unnormalized_datasets/$id/finalMatches.col";
+    `perl ITMAT_circularRNA/samToSpreadsheetCol.pl -s unnormalized_datasets/$id/finalMatches_all.sam -c $id > unnormalized_datasets/$id/finalMatches_all.col`;
+    $colfile_list .= " unnormalized_datasets/$id/finalMatches_all.col";
 }
 
-`perl combineColumns.pl $colfile_list > combinedSpreadsheet.txt`;
+`perl ITMAT_circularRNA/combineColumns.pl $colfile_list > combinedSpreadsheet_all.txt`;
