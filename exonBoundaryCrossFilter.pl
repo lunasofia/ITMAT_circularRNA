@@ -3,16 +3,22 @@
 # ITMAT at UPenn
 # -------------------------------------------
 # Counts the number of crossings for each scrambled pair.
-#
-# Takes in two files. The first is the list of exons for
-# each gene, which is used to gather information about
-# the lengths of the exons. The second is the SAM file
-# of matches.
+# Output is in SAM format.
 # 
-# The list of exons must be in the following format:
-# >GENE1 exon 1 chr1 00050 00100
-#
-# Prints in SAM format.
+# Required flags:
+# --exon-info-file (-e) <filename>
+#     file with list of exons for each gene. This file
+#     can be either in fasta format or in fasta without
+#     the actual sequences (only the header lines,
+#     wich start with '>').
+# --sam-file (-s) <filename>
+#     SAM file with reads matched to the database of
+#     scrambled exon junctions.
+# Optional flags:
+# --min-overlap (-m) <n>
+#     Integer value. The minimum overlap for a boundary
+#     crossing to be counted as legitimate. The default
+#     value is 30 (base pairs).
 
 use strict;
 use warnings;
@@ -21,12 +27,12 @@ use Getopt::Long;
 my ($EXONS_FILE, $SAM_FILE, $help);
 my $MIN_OVERLAP = 30;
 GetOptions('help|?' => \$help,
-	   'exon-info-filename=s' => \$EXONS_FILE,
-	   'sam-filename=s' => \$SAM_FILE,
+	   'exon-info-file=s' => \$EXONS_FILE,
+	   'sam-file=s' => \$SAM_FILE,
 	   'min-overlap=i' => \$MIN_OVERLAP);
 
 &usage if $help;
-&usage  unless ($EXONS_FILE && $SAM_FILE);
+&usage unless ($EXONS_FILE && $SAM_FILE);
 
 # Hash to keep track of exon lengths.
 # Key format is gene_name exon_num
@@ -121,6 +127,7 @@ sub getExonLengths {
 
     open my $exons_fh, '<', $EXONS_FILE or die "\nError: could not open exon info file.\n";
     while(my $nameline = <$exons_fh>) {
+	next unless($nameline =~ /^>/); # only exon info lines read
 	chomp($nameline);
 	
 	my @namelineVals = split(" ", $nameline);
@@ -154,18 +161,22 @@ sub makeExonLenKey {
 sub usage {
     die "
  Counts the number of crossings for each scrambled pair.
-
- Takes in two files. The first is the list of exons for
- each gene, which is used to gather information about
- the lengths of the exons. The second is the SAM file
- of matches.
+ Output is in SAM format.
  
- The list of exons must be in the following format:
- >GENE1 exon 1 chr1 00050 00100
-
- Prints in SAM format.
-
- Usage:\n perl exonBoundaryCrossFilter.pl --exon-info-filename=\"exons.txt\" --sam-filename=\"filename.sam\" [--min-overlap=40]
+ Required flags:
+ --exon-info-file (-e) <filename>
+     file with list of exons for each gene. This file
+     can be either in fasta format or in fasta without
+     the actual sequences (only the header lines,
+     wich start with '>').
+ --sam-file (-s) <filename>
+     SAM file with reads matched to the database of
+     scrambled exon junctions.
+ Optional flags:
+ --min-overlap (-m) <n>
+     Integer value. The minimum overlap for a boundary
+     crossing to be counted as legitimate. The default
+     value is 30 (base pairs).
 
 "
 }

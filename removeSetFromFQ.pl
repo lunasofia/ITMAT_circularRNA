@@ -2,17 +2,26 @@
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # -------------------------------------------
-# Takes in as the first parameter a fastq files.
-# Takes in as the second parameter a file of
-# ID for searches (separated by newlines, no @
-# symbol prefix).
+# Takes in a fastq file and a file of IDs to
+# be removed from the fastq file. The IDs should
+# be one per line, without @ symbol prefix.
 #
 # Outputs a fastq with the entries corresponding
 # to those IDs removed.
 #
-# TODO: put in nicer commandline parsing, error checking
+# Usage: perl removeSetFromFQ --fq-file="file.fq" --idlist-file="file.txt"
 
-my ($FQ_FILE, $IDLIST_FILE) = @ARGV;
+use strict;
+use warnings;
+use Getopt::Long;
+
+my ($FQ_FILE, $IDLIST_FILE, $help);
+GetOptions('help|?' => \$help,
+	   'fq-file=s' => \$FQ_FILE,
+	   'idlist-file=s' => \$IDLIST_FILE);
+
+&usage if $help;
+&usage unless ($FQ_FILE && $IDLIST_FILE);
 
 my %idlist = ();
 
@@ -24,6 +33,8 @@ while(<$idlist_fh>) {
 }
 close $idlist_fh;
 
+# Read through fastq and print any entry that
+# does not appear in the hash
 my $FQ_NUMLINES = 4;
 open my $fq_fh, '<', $FQ_FILE;
 while(<$fq_fh>) {
@@ -33,11 +44,29 @@ while(<$fq_fh>) {
     my $id = $idline_arr[0];
     next if($idlist{ "$id" });
 
+    # Print out all fq lines.
     print "$_";
     for(my $i = 1; $i < $FQ_NUMLINES; $i++) {
 	my $contentLine = <$fq_fh>;
+	last unless $contentLine;
 	chomp($contentLine);
 	print "$contentLine\n";
     }
 }
 close $fq_fh;
+
+
+
+sub usage {
+    die "
+ Takes in a fastq file and a file of IDs to
+ be removed from the fastq file. The IDs should
+ be one per line, without @ symbol prefix.
+
+ Outputs a fastq with the entries corresponding
+ to those IDs removed.
+
+ Usage: perl removeSetFromFQ --fq-file=\"file.fq\" --idlist-file=\"file.txt\"
+
+"
+}
