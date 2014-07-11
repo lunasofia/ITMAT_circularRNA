@@ -189,8 +189,8 @@ foreach my $id (@ids) {
 	$command2 .= "$READS_PATH$id/${direction}_reads,sai ";
 	$command2 .= "$READS_PATH$id/${direction}_equalized.fq ";
 	$command2 .= "> $READS_PATH$id/${direction}_aligned.sam";
-	my $err = system($command2);
-	die "ERROR: call ($command2) failed with status $err. Exiting.\n\n" if $err;
+	my $err2 = system($command2);
+	die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
 
 	print "\tSTATUS: Aligned $id $direction.\n" if $verbose;
 
@@ -232,8 +232,8 @@ foreach my $id (@ids) {
     $command2 .= "--sam-filename $READS_PATH$id/together_finalmatch.sam ";
     $command2 .= "--column-title $id ";
     $command2 .= "> $READS_PATH$id/frequencies.txt";
-    my $err = system($command2);
-    die "ERROR: call ($command2) failed with status $err. Exiting.\n\n" if $err;
+    my $err2 = system($command2);
+    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
     print "\tSTATUS: samToSpreadsheetCol ran successfully.\n" if $verbose;
     print "STATUS: Done converting to frequency column.\n\n";
     # ----------- done converting to column ----------
