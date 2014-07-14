@@ -29,7 +29,7 @@
 #     This specifies the shuffles exon index. Note
 #     that BWA's index command should be used to
 #     generate the other files in the directory.
-#     (This file should be a fasta file.)
+#     (This file should be a FastA file.)
 # --reads-path (-r) <path/>
 #     This specifies the directory containing the
 #     ids.txt file and the files with the samples.
@@ -189,9 +189,9 @@ foreach my $id (@ids) {
 	my $err = system($command);
 	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	
-	my $command2 = $BWA_PATH . $BWA_VERSION;
+	my $command2 = $BWA_PATH;
 	$command2 .= "bwa samse $EXON_DATABASE ";
-	$command2 .= "$READS_PATH$id/${direction}_reads,sai ";
+	$command2 .= "$READS_PATH$id/${direction}_reads.sai ";
 	$command2 .= "$READS_PATH$id/${direction}_equalized.fq ";
 	$command2 .= "> $READS_PATH$id/${direction}_aligned.sam";
 	my $err2 = system($command2);
@@ -270,6 +270,11 @@ die "
      This specifies the path to BWA. If, to run
      BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
      then path should be \"../stuff/bwa/bwa-0.7.9a/\"
+ --exon-database (-e) <version/>
+     This specifies the shuffles exon index. Note
+     that BWA's index command should be used to
+     generate the other files in the directory.
+     (This file should be a fasta file.)
  --read-directory (-r) <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
