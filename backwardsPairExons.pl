@@ -4,16 +4,19 @@
 # ----------------------------------------------
 # This program takes in a list of exons and, within
 # each gene, finds all out-of-order pairings of exons
-# and prints out the resulting sequence.
+# and prints out the resulting sequence. The input is
+# fasta, with information line as shown below:
 #
 # Input format:
-# >NM_028778 exon 1 chr1 134212701 134213049
+# >GENEA.1 exon 1 chr1 134212701 134213049
 # GCGGGGCTTTCTAGCGTGCTCGGG
-# >NM_028778 exon 2 chr1 134221529 134221650
+# >GENEA.1 exon 2 chr1 134221529 134221650
 # GTGGCCATCAAGTCCATCAGGAAAGACAAAATCAAAGATGAGCAGGATCTGC
 #
+# The gene name can not have any dashes.
+#
 # Output format:
-# >NM_028778 exon 2 chr1 134221529 134221650 exon 1 chr1 134212701 134213049
+# >GENEA.1-2-1
 # GTGGCCATCAAGTCCATCAGGAAAGACAAAATCAAAGATGAGCAGGATCTGCGCGGGGCTTTCTAGCGTGCTCGGG
 
 use strict;
@@ -29,7 +32,9 @@ my $EXON_END = 5;
 my $SEQ = 6;
 
 # Indices of various information in the array of a
-# junction (the value in the hash).
+# junction (the value in the hash). $ORD keeps track
+# of the order entered, so that the output can be
+# printed in order.
 my $ORD = 0;
 my $LENGTH = 1;
 my $PRINT_INFO = 2;
@@ -50,23 +55,21 @@ my %pairs = ();
 my $order = 0;
 
 while (my $nameline = <>) {
-    my $dataline;
-    if (!($dataline = <>)) {
-	# this would really be some kind of error...
-	last;
-    }
+    # Read in sequence line.
+    my $dataline = <> or die "Error: bad file format\n";
+
     chomp($dataline);
     chomp($nameline);
     
-    my @namelinevals = split(" ", $nameline);
+    my @namelineVals = split(" ", $nameline);
 
-    if($curGeneName ne $namelinevals[$GENE_NAME]) {
+    if($curGeneName ne $namelineVals[$GENE_NAME]) {
 	&processGene;
 	&clearExonList;
-	$curGeneName = $namelinevals[$GENE_NAME];
+	$curGeneName = $namelineVals[$GENE_NAME];
     }
 
-    push @exonList, [ (@namelinevals, $dataline) ];
+    push @exonList, [ (@namelineVals, $dataline) ];
 }
 &processGene;
 &clearExonList;
@@ -99,8 +102,8 @@ sub processGene {
 # form: 
 # chr1.100:20
 sub makeKeyString {
-    return "$exonList[$_[0]]->[$CHR]" . "." 
-	. "$exonList[$_[0]]->[$EXON_END]" . ":" 
+    return "$exonList[$_[0]]->[$CHR]" . "-" 
+	. "$exonList[$_[0]]->[$EXON_END]" . "-" 
 	. "$exonList[$_[1]]->[$EXON_START]";
 }
 
@@ -134,12 +137,9 @@ sub getLength {
 # returns the info about the pair (to be used as a header for
 # the sequence information).
 sub makeNameDataString {
-    my $nameString = "$exonList[$_[0]]->[$GENE_NAME] ";
-    for(my $exNum = 0; $exNum <= 1; $exNum++) {
-	for(my $i = $EXON; $i <= $EXON_END; $i++) {
-	    $nameString .= "$exonList[$_[$exNum]]->[$i] ";
-	}
-    }
+    my $nameString = "$exonList[$_[0]]->[$GENE_NAME]-";
+    $nameString .= "$exonList[$_[0]]->[$EXON_NUM]-";
+    $nameString .= "$exonList[$_[1]]->[$EXON_NUM]";
     return $nameString;
 }
 
