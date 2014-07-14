@@ -9,7 +9,6 @@
 # READS/
 #   |---ids.txt
 #   |---exon_info.txt
-#   |---scrambled_exon_database.fa
 #   |--- Sample_1/
 #           |--- Sample_1_forward.fq
 #           |--- Sample_1_reverse.fq
@@ -26,6 +25,11 @@
 #     This specifies the path to BWA. If, to run
 #     BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
 #     then path should be "../stuff/bwa/bwa-0.7.9a/"
+# --exon-database (-e) <version/>
+#     This specifies the shuffles exon index. Note
+#     that BWA's index command should be used to
+#     generate the other files in the directory.
+#     (This file should be a fasta file.)
 # --reads-path (-r) <path/>
 #     This specifies the directory containing the
 #     ids.txt file and the files with the samples.
@@ -56,12 +60,13 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my ($BWA_PATH, $READS_PATH,
+my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $GENOME, $help, $verbose);
+    $READS_PATH, $GENOME, $help, $verbose);
 GetOptions('help|?' => \$help,
 	   'verbose' => \$verbose,
 	   'bwa-path=s' => \$BWA_PATH,
+	   'exon-database=s' => \$EXON_DATABASE,
 	   'reads-path=s' => \$READS_PATH,
 	   'scripts-path=s' => \$SCRIPTS_PATH,
 	   'min-overlap=i' => \$MIN_OVERLAP,
@@ -178,14 +183,14 @@ foreach my $id (@ids) {
     print "STATUS: Aligning to shuffled exon database.\n";
     foreach my $direction (@DIRECTIONS) {
 	my $command = $BWA_PATH;
-	$command .= "bwa aln ${READS_PATH}scrambled_exon_database.fa ";
+	$command .= "bwa aln $EXON_DATABASE ";
 	$command .= "$READS_PATH$id/${direction}_equalized.fq";
 	$command .= " > $READS_PATH$id/${direction}_reads.sai";
 	my $err = system($command);
 	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	
-	my $command2 = $BWA_PATH;
-	$command2 .= "bwa samse ${READS_PATH}scrambled_exon_database.fa ";
+	my $command2 = $BWA_PATH . $BWA_VERSION;
+	$command2 .= "bwa samse $EXON_DATABASE ";
 	$command2 .= "$READS_PATH$id/${direction}_reads,sai ";
 	$command2 .= "$READS_PATH$id/${direction}_equalized.fq ";
 	$command2 .= "> $READS_PATH$id/${direction}_aligned.sam";

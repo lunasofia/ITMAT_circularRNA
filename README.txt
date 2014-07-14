@@ -21,6 +21,8 @@ Next, make sure that directories are in the following structure:
 
 READS/
    |--- ids.txt
+   |--- exon_info.txt
+   |--- scrambled_exon_database.fa
    |--- Sample_1/
  	   |--- Sample_1_forward.fq
 	   |--- Sample_1_reverse.fq
@@ -48,9 +50,8 @@ The pipeline consists of the following main stages:
 2. Remove regular matches with STAR (optional)
 3. Normalize number of reads
 4. Align to shuffled exon database
-5. Select well-aligned entries (optional)
-6. Remove entries not crossing exon-exon boundaries
-7. Create frequency spreadsheet
+5. Remove entries not crossing exon-exon boundaries
+6. Create frequency spreadsheet
 
 
 ---------- ABOUT THE PROJECT ----------
