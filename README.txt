@@ -22,7 +22,6 @@ Next, make sure that directories are in the following structure:
 READS/
    |--- ids.txt
    |--- exon_info.txt
-   |--- scrambled_exon_database.fa
    |--- Sample_1/
  	   |--- Sample_1_forward.fq
 	   |--- Sample_1_reverse.fq
