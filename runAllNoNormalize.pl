@@ -138,7 +138,7 @@ if($STAR_PATH) {
 
 	    print "\tSTATUS: successfully pre-aligned $id $direction with STAR.\n"  if $verbose;
 	    
-	    my $command2 = "${PERL_PREFIX}unmatchedFromSam ";
+	    my $command2 = "${PERL_PREFIX}unmatchedFromSAM.pl ";
 	    $command2 .= "--fastq-file $READS_PATH$id/${id}_$direction.fq ";
 	    $command2 .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
 	    $command2 .= "> $READS_PATH$id/${direction}_equalized.fq";
