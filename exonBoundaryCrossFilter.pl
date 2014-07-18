@@ -54,6 +54,7 @@ my $SEQ = 9;
 # Keep track of errors to be printed at end
 my $incorNamesCount = 0;
 my $noExonFoundCount = 0;
+my $asteriskCount = 0; # INSERTED FOR TESTING
 
 open my $sam_fh, '<', $SAM_FILE or die "\nError: Could not open sam file.\n";
 while(my $line = <$sam_fh>) {
@@ -65,7 +66,8 @@ while(my $line = <$sam_fh>) {
 
     my @nameArr = split("-", $fieldVals[$RNAME]);
     if($#nameArr != 2) { 
-	$incorNamesCount++;
+	$incorNamesCount++ unless ($nameArr[0] eq '*');
+	$asteriskCount++ if ($nameArr[0] eq '*');
 	next;
     }
 
@@ -89,7 +91,7 @@ close $sam_fh;
 
 warn "WARNING: $incorNamesCount badly formed RNAME fields found\n" if $incorNamesCount;
 warn "WARNING: $noExonFoundCount exons not found\n" if $noExonFoundCount;
-
+warn "WARNING: $asteriskCount asterisks found in RNAME field\n" if $asteriskCount;
 
 
 # Given a CIGAR string, returns the length along
