@@ -50,8 +50,11 @@
 #     the path should be "../stuff/star/". The STAR
 #     directory must also contain, in index/, the
 #     name of the genome.
-# --genome-name (-g) <name>
+# --genome-path (-g) <name>
 #     Necessary if --star-prealign is specified.
+# --thread-count (-t)
+#     How many threads should be used (while running
+#     STAR - the rest does not yet support threads.)   
 # --verbose (-v)
 #     If specified, prints out status messages.
 
@@ -62,7 +65,7 @@ use Getopt::Long;
 
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $READS_PATH, $GENOME, $help, $verbose);
+    $READS_PATH, $GENOME_PATH, $help, $verbose);
 GetOptions('help|?' => \$help,
 	   'verbose' => \$verbose,
 	   'bwa-path=s' => \$BWA_PATH,
@@ -71,7 +74,7 @@ GetOptions('help|?' => \$help,
 	   'scripts-path=s' => \$SCRIPTS_PATH,
 	   'min-overlap=i' => \$MIN_OVERLAP,
 	   'prealign-star=s' => \$STAR_PATH,
-	   'genome-name=s' => \$GENOME);
+	   'genome-path=s' => \$GENOME_PATH);
 
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
@@ -79,7 +82,8 @@ GetOptions('help|?' => \$help,
 &usage if $help;
 &usage unless ($BWA_PATH && $READS_PATH);
 if($STAR_PATH) {
-    &usage unless $GENOME;
+    &usage unless $GENOME_PATH;
+    $GENOME_PATH .= "/" unless $GENOME_PATH =~ /\/$/;
     $STAR_PATH .= "/" unless $STAR_PATH =~ /\/$/;
 }
 if($SCRIPTS_PATH) {
@@ -295,10 +299,13 @@ die "
      the path should be \"../stuff/star/\". The STAR
      directory must also contain, in index/, the
      name of the genome.
- --genome-name (-g) <name>
+ --genome-path (-g) <name>
      Necessary if --star-prealign is specified.
+ --thread-count (-t)
+     How many threads should be used (while running
+     STAR - the rest does not yet support threads.)   
  --verbose (-v)
-     If specified, prints out extra status messages.
+     If specified, prints out status messages.
 
 "
 }
