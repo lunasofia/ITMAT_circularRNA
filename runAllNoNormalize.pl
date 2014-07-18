@@ -128,7 +128,7 @@ if($STAR_PATH) {
 	    $command .= "--genomeDir $GENOME_PATH ";
 	    $command .= "--readFilesIn $READS_PATH$id/${id}_$direction.fq ";
 	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
-	    $command .= "--outFilterMultipmapNmax 10000 ";
+	    $command .= "--outFilterMultimapNmax 10000 ";
 	    $command .= "--outSAMunmapped Within ";
 	    $command .= "--outFilterNminOverLread .75";
 	    $command .= "--outFileNamePrefix $READS_PATH$id/";
@@ -255,7 +255,7 @@ die "
      that BWA's index command should be used to
      generate the other files in the directory.
      (This file should be a fasta file.)
- --read-directory (-r) <path/>
+ --reads-path (-r) <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
      
