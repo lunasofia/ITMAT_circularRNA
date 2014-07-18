@@ -145,6 +145,9 @@ if($STAR_PATH) {
 	    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
 
 	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
+	    
+	    # So as not to take up too much space.
+	    system("rm $READS_PATH$id/Aligned.out.sam");
 	}
     }
 }
@@ -201,6 +204,9 @@ foreach my $id (@ids) {
     print "\tSTATUS: combined forward and reverse\n" if $verbose;
     
     print "STATUS: Done selectiong exon-boundary crossing reads for $id.\n\n";
+
+    system("rm $READS_PATH$id/forward_finalmatch.sam");
+    system("rm $READS_PATH$id/reverse_finalmatch.sam");
     # ----------- done selecting for boundary-crossing ----------
 
 
