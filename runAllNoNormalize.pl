@@ -131,10 +131,11 @@ if($STAR_PATH) {
 	    $command .= "--outFilterMultimapNmax 10000 ";
 	    $command .= "--outSAMunmapped Within ";
 	    $command .= "--outFilterMatchNminOverLread .75";
-	    $command .= "--outFileNamePrefix $READS_PATH$id/";
 	    my $err = system($command);
 	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	    
+	    system("mv Aligned.out.sam $READS_PATH$id/");
+
 	    print "\tSTATUS: successfully pre-aligned $id $direction with STAR.\n"  if $verbose;
 	    
 	    my $command2 = "${PERL_PREFIX}unmatchedFromSam ";
