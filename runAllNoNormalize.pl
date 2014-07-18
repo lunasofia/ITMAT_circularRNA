@@ -130,7 +130,7 @@ if($STAR_PATH) {
 	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
 	    $command .= "--outFilterMultimapNmax 10000 ";
 	    $command .= "--outSAMunmapped Within ";
-	    $command .= "--outFilterNminOverLread .75";
+	    $command .= "--outFilterMatchNminOverLread .75";
 	    $command .= "--outFileNamePrefix $READS_PATH$id/";
 	    my $err = system($command);
 	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
