@@ -2,7 +2,8 @@
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # ----------------------------------------
-# Runs the full pipeline to search for shuffled exons.
+# Runs the full pipeline to search for shuffled exons, but with
+# no normalization step.
 # 
 # The directories must be arranged in the following structure:
 #
@@ -12,11 +13,9 @@
 #   |--- Sample_1/
 #           |--- Sample_1_forward.fq
 #           |--- Sample_1_reverse.fq
-#           |--- Sample_1.ribosomalids.txt
 #   |--- Sample_2/
 #           |--- Sample_2_forward.fq
 #           |--- Sample_2_reverse.fq
-#           |--- Sample_2.ribosomalids.txt
 #
 # More detailed specifications are in README.txt
 #
@@ -54,7 +53,7 @@
 #     Necessary if --star-prealign is specified.
 # --thread-count (-t)
 #     How many threads should be used (while running
-#     STAR - the rest does not yet support threads.)   
+#     STAR - the rest does not yet support threads.)
 # --verbose (-v)
 #     If specified, prints out status messages.
 
@@ -65,7 +64,8 @@ use Getopt::Long;
 
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $READS_PATH, $GENOME_PATH, $help, $verbose);
+    $READS_PATH, $GENOME_PATH, $NTHREADS, 
+    $help, $verbose);
 GetOptions('help|?' => \$help,
 	   'verbose' => \$verbose,
 	   'bwa-path=s' => \$BWA_PATH,
@@ -74,7 +74,8 @@ GetOptions('help|?' => \$help,
 	   'scripts-path=s' => \$SCRIPTS_PATH,
 	   'min-overlap=i' => \$MIN_OVERLAP,
 	   'prealign-star=s' => \$STAR_PATH,
-	   'genome-path=s' => \$GENOME_PATH);
+	   'genome-path=s' => \$GENOME_PATH,
+	   'thread-count=i' => \$NTHREADS);
 
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
@@ -117,69 +118,38 @@ print "STATUS: Successfully loaded ID list\n\n";
 # ---------- done getting ID list ----------
 
 
+# ----------- REMOVE REGULAR MATCHES (if specified) ----------
 print "STATUS: Beginning match weed-out\n";
-foreach my $id (@ids) {
+if($STAR_PATH) {
+    print "\tSTATUS: beginning to pre-align with STAR.\n";
+    foreach my $id (@ids) {
+	foreach my $direction (@DIRECTIONS) {
+	    my $command = "${STAR_PATH}STAR ";
+	    $command .= "--genomeDir $GENOME_PATH ";
+	    $command .= "--readFilesIn $READS_PATH$id/${id}_$direction.fq ";
+	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
+	    $command .= "--outFilterMultipmapNmax 10000 ";
+	    $command .= "--outSAMunmapped Within ";
+	    $command .= "--outFilterNminOverLread .75";
+	    $command .= "--outFileNamePrefix $READS_PATH$id/";
+	    my $err = system($command);
+	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+	    
+	    print "\tSTATUS: successfully pre-aligned $id $direction with STAR.\n"  if $verbose;
+	    
+	    my $command2 = "$PERL_PREFIX unmatchedFromSam ";
+	    $command2 .= "--fastq-file $READS_PATH$id/${id}_$direction.fq ";
+	    $command2 .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
+	    $command2 .= "> $READS_PATH$id/${direction}_equalized.fq";
+	    my $err2 = system($command2);
+	    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
 
-    # ----------- REMOVE rRNA MATCHES ----------
-    print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
-    foreach my $direction (@DIRECTIONS) {
-	my $command = $PERL_PREFIX;
-	$command .= "removeSetFromFQ.pl ";
-	$command .= "--fq-file $READS_PATH$id/$id";
-	$command .= "_$direction.fq ";
-	$command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	$command .= " > $READS_PATH$id/${direction}_norib.fq";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
-    } 
-    print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
-    # ----------- done removing rRNA matches ----------
-
-
-    # ----------- REMOVE REGULAR MATCHES (if specified) ----------
-    # ----------- done removing regular matches ----------
-    
+	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
+	}
+    }
 }
 print "STATUS: Finished match weed-out\n\n";
-
-
-
-# ----------- EQUALIZE NUMBER OF READS -----------
-print "STATUS: Equalizing numbers of reads\n";
-my $minNumReads;
-foreach my $id (@ids) {
-    foreach my $direction (@DIRECTIONS) {
-	# Count lines
-	my $lineCount = 0;
-	open my $fq_fh, '<', "$READS_PATH$id/${direction}_norib.fq" or die "ERROR\n";
-	while(<$fq_fh>) {
-	    $lineCount++;
-	}
-	close $fq_fh;
-	
-	# Update min if necessary
-	my $nReads = $lineCount / 4;	
-	$minNumReads = $nReads unless $minNumReads; # if first loop
-	$minNumReads = $nReads if $nReads < $minNumReads;
-    }
-}
-print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
-
-foreach my $id (@ids) {
-    foreach my $direction (@DIRECTIONS) {
-	my $command = $PERL_PREFIX;
-	$command .= "randSubsetFromFQ.pl ";
-	$command .= "--fq-filename $READS_PATH$id/${direction}_norib.fq ";
-	$command .= "--n-output-entries $minNumReads";
-	$command .= " > $READS_PATH$id/${direction}_equalized.fq";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	print "\tSTATUS: Equalized $id $direction.\n" if $verbose;
-    }
-}
-print "STATUS: Done equalizing number of reads\n\n";
-# ----------- done equalizing number of reads -----------
+# ----------- done removing regular matches ----------
 
 
 foreach my $id (@ids) {
@@ -303,7 +273,7 @@ die "
      Necessary if --star-prealign is specified.
  --thread-count (-t)
      How many threads should be used (while running
-     STAR - the rest does not yet support threads.)   
+     STAR - the rest does not yet support threads.)
  --verbose (-v)
      If specified, prints out status messages.
 
