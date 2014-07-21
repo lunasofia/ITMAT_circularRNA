@@ -43,10 +43,12 @@ open my $freq_fd, '<', $FREQ_FILE or die "ERROR: could not open frequencies file
 while(my $line = <$freq_fd>) {
     chomp($line);
     my @data = split("\t", $line);
+    my @namePieces = split("-", $data[0]);
+    my $ucID = @namePieces[0];
     
     next if $. == 1; # Don't want ot use the first line.
     
-    my $geneName = $ucIDtoGene{ $data[0] };
+    my $geneName = $ucIDtoGene{ $ucID };
     unless($geneName) {
 	warn "ucID $data[0] not found.\n";
 	next;
