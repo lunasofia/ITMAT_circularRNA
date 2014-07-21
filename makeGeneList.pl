@@ -67,7 +67,7 @@ close $freq_fd;
 
 
 print "Gene_Symbol\tFrequency";
-foreach my $gene (keys %geneToFreq) {
+foreach my $gene (sort {$geneToFreq{b} <=> $geneToFreq{a}} keys %geneToFreq) {
     print "\n$gene\t$geneToFreq{$gene}";
 }
 
