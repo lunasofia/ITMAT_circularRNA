@@ -32,6 +32,6 @@ while(my $line = <>) {
     $lines{ $line } = $sum;
 }
 
-foreach my $line (sort { $lines{$a} <=> $lines{$b} } keys %lines) {
+foreach my $line (sort { $lines{$b} <=> $lines{$a} } keys %lines) {
     print "\n$line";
 }
