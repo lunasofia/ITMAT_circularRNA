@@ -15,12 +15,12 @@ use Getopt::Long;
 
 my $help;
 my $FQ_FILE;
-my $N_OUT
+my $N_OUT;
 my $LINES_PER_ENTRY;
 
 GetOptions('help|?' => \$help,
 	   'fq-filename=s' => \$FQ_FILE,
-	   'n-output-entries=i' => \$N_OUT
+	   'n-output-entries=i' => \$N_OUT,
 	   'n-lines-per-entry=i' => \$LINES_PER_ENTRY);
 
 &usage unless ($FQ_FILE && $N_OUT && $LINES_PER_ENTRY);
