@@ -50,7 +50,7 @@ while(my $line = <$freq_fd>) {
     
     my $geneName = $ucIDtoGene{ $ucID };
     unless($geneName) {
-	warn "ucID $data[0] not found.\n";
+	warn "ucID $ucID not found.\n";
 	next;
     }
 
