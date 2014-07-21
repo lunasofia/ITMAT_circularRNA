@@ -47,6 +47,10 @@ while(my $line = <$freq_fd>) {
     next if $. == 1; # Don't want ot use the first line.
     
     my $geneName = $ucIDtoGene{ $data[0] };
+    unless($geneName) {
+	warn "ucID $data[0] not found.\n";
+	next;
+    }
 
     $geneToFreq{ $geneName } = 0 unless $geneToFreq{ $geneName };
     
