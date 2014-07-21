@@ -14,8 +14,8 @@ use Getopt::Long;
 
 my ($GENES_FILE, $FREQ_FILE, $help);
 GetOptions('help|?' => \$help,
-	   'genes-file' => \$GENES_FILE,
-	   'frequency-spreadsheet' => \$FREQ_FILE);
+	   'genes-file=s' => \$GENES_FILE,
+	   'frequency-spreadsheet=s' => \$FREQ_FILE);
 
 &usage if $help;
 &usage unless ($GENES_FILE && $FREQ_FILE);
