@@ -38,9 +38,21 @@ foreach my $FILE (@CROSS_SAM_FILES) {
 	
 	# add to hash
 	$crossingEvents{ $samVals[$S_QNAME] } = 1;
-	
-	# print out SAM line
+    }
+    close $cross_sam_fh;
+}
+
+
+foreach my $FILE (@CROSS_SAM_FILES) {
+    open my $cross_sam_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
+    while(my $line = <$cross_sam_fh>) {
+	chomp($line);
+	my @samVals = split("\t", $line);
+	next unless $crossingEvents{ $samVals[$S_QNAME] };
+
 	print "$line\n";
+	$crossingEvents{ $samVals[$S_QNAME] } += 2;
+	
     }
     close $cross_sam_fh;
 }
@@ -55,6 +67,7 @@ foreach my $FILE (@REG_SAM_FILES) {
 	next unless $crossingEvents{ $samVals[$S_QNAME] };
 	
 	print "$line\n";
+	$crossingEvents{ $samVals[$S_QNAME] } += 16;
     }
     close $reg_sam_fh;
 }
