@@ -146,6 +146,8 @@ foreach my $id (@ids) {
 	    print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
 	} 
 	print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
+    } else {
+	print "\tSTATUS: Not removing rRNA (not specified)\n" if $verbose;
     }
     # ----------- done removing rRNA matches ----------
 
@@ -179,7 +181,7 @@ foreach my $id (@ids) {
 	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
 	    
 	} else {
-	    system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_weeded.fq");
+	    system("cp -l $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_weeded.fq");
 	}
     }
 
