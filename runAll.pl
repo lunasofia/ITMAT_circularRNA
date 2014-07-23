@@ -18,7 +18,9 @@
 #           |--- Sample_2_reverse.fq
 #           |--- Sample_2.ribosomalids.txt
 #
-# More detailed specifications are in README.txt
+# Note that the ribosomal id files are only necessary if the
+# flag remove-rrna is specified.
+# More detailed specifications are in README.txt.
 #
 # Necessary Flags:
 # --bwa-path <path/>
@@ -205,7 +207,7 @@ foreach my $direction (@DIRECTIONS) {
 	
 	# Update min if necessary
 	my $nReads = $lineCount / 4;	
-	$minNumReads = $nReads unless $minNumReads; # if first loop
+	$minNumReads = $nReads unless defined $minNumReads; # if first loop
 	$minNumReads = $nReads if $nReads < $minNumReads;
     }
     
