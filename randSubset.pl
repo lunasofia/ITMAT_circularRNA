@@ -23,7 +23,12 @@ GetOptions('help|?' => \$help,
 	   'n-output-entries=i' => \$N_OUT,
 	   'n-lines-per-entry=i' => \$LINES_PER_ENTRY);
 
+<<<<<<< HEAD:randSubset.pl
 &usage unless ($FQ_FILE && $N_OUT && $LINES_PER_ENTRY);
+=======
+&usage unless ($FQ_FILE);
+&usage unless defined $N_OUT;
+>>>>>>> develop:randSubsetFromFQ.pl
 
 # Hash to hold the fq entries. After adding enough and
 # swapping according to algorithm, prints to file.
