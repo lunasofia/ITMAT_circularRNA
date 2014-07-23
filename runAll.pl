@@ -138,7 +138,7 @@ foreach my $id (@ids) {
 	    $command .= "removeSetFromFQ.pl ";
 	    $command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
 	    $command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	    $command .= " > $READS_PATH$id/$i{d}_${direction}.fq";
+	    $command .= " > $READS_PATH$id/${id}_${direction}.fq";
 	    my $err = system($command);
 	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	    print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
