@@ -65,16 +65,19 @@ use Getopt::Long;
 
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $READS_PATH, $GENOME_PATH, $help, $verbose);
+    $READS_PATH, $GENOME_PATH, $NTHREADS,
+    $help, $verbose);
 GetOptions('help|?' => \$help,
-	   'verbose' => \$verbose,
-	   'bwa-path=s' => \$BWA_PATH,
-	   'exon-database=s' => \$EXON_DATABASE,
-	   'reads-path=s' => \$READS_PATH,
-	   'scripts-path=s' => \$SCRIPTS_PATH,
-	   'min-overlap=i' => \$MIN_OVERLAP,
-	   'prealign-star=s' => \$STAR_PATH,
-	   'genome-path=s' => \$GENOME_PATH);
+           'verbose' => \$verbose,
+           'bwa-path=s' => \$BWA_PATH,
+           'exon-database=s' => \$EXON_DATABASE,
+           'reads-path=s' => \$READS_PATH,
+           'scripts-path=s' => \$SCRIPTS_PATH,
+           'min-overlap=i' => \$MIN_OVERLAP,
+           'prealign-star=s' => \$STAR_PATH,
+           'genome-path=s' => \$GENOME_PATH,
+           'thread-count=i' => \$NTHREADS);
+
 
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
@@ -123,12 +126,13 @@ foreach my $id (@ids) {
     # ----------- REMOVE rRNA MATCHES ----------
     print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
     foreach my $direction (@DIRECTIONS) {
+	system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_old.fq");
+
 	my $command = $PERL_PREFIX;
 	$command .= "removeSetFromFQ.pl ";
-	$command .= "--fq-file $READS_PATH$id/$id";
-	$command .= "_$direction.fq ";
+	$command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
 	$command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	$command .= " > $READS_PATH$id/${direction}_norib.fq";
+	$command .= " > $READS_PATH$id/${direction}.fq";
 	my $err = system($command);
 	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
@@ -138,6 +142,38 @@ foreach my $id (@ids) {
 
 
     # ----------- REMOVE REGULAR MATCHES (if specified) ----------
+    foreach my $direction (@DIRECTIONS) {
+	if($STAR_PATH) {
+	    print "\tSTATUS: beginning to pre-align with STAR ($id $direction).\n";
+	    
+	    my $command = "${STAR_PATH}STAR ";
+	    $command .= "--genomeDir $GENOME_PATH ";
+	    $command .= "--readFilesIn $READS_PATH$id/$direction.fq ";
+	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
+	    $command .= "--outFilterMultimapNmax 10000 ";
+	    $command .= "--outSAMunmapped Within ";
+	    $command .= "--outFilterMatchNminOverLread .75";
+	    my $err = system($command);
+	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+	    
+	    system("mv Aligned.out.sam $READS_PATH$id/");
+	    
+	    print "\tSTATUS: successfully pre-aligned $id $direction with STAR.\n"  if $verbose;
+	    
+	    my $command2 = "${PERL_PREFIX}unmatchedFromSAM.pl ";
+	    $command2 .= "--fastq-file $READS_PATH$id/${id}_$direction.fq ";
+	    $command2 .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
+	    $command2 .= "> $READS_PATH$id/${direction}_weeded.fq";
+	    my $err2 = system($command2);
+	    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
+	    
+	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
+	    
+	} else {
+	    system("mv $READS_PATH$id/$direction.fq $READS_PATH$id/${direction}_weeded.fq");
+	}
+    }
+
     # ----------- done removing regular matches ----------
     
 }
@@ -152,7 +188,7 @@ foreach my $id (@ids) {
     foreach my $direction (@DIRECTIONS) {
 	# Count lines
 	my $lineCount = 0;
-	open my $fq_fh, '<', "$READS_PATH$id/${direction}_norib.fq" or die "ERROR\n";
+	open my $fq_fh, '<', "$READS_PATH$id/${direction}_weeded.fq" or die "ERROR\n";
 	while(<$fq_fh>) {
 	    $lineCount++;
 	}
@@ -170,7 +206,7 @@ foreach my $id (@ids) {
     foreach my $direction (@DIRECTIONS) {
 	my $command = $PERL_PREFIX;
 	$command .= "randSubsetFromFQ.pl ";
-	$command .= "--fq-filename $READS_PATH$id/${direction}_norib.fq ";
+	$command .= "--fq-filename $READS_PATH$id/${direction}_weeded.fq ";
 	$command .= "--n-output-entries $minNumReads";
 	$command .= " > $READS_PATH$id/${direction}_equalized.fq";
 	my $err = system($command);
