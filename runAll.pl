@@ -138,13 +138,13 @@ foreach my $id (@ids) {
 	    $command .= "removeSetFromFQ.pl ";
 	    $command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
 	    $command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	    $command .= " > $READS_PATH$id/${direction}.fq";
+	    $command .= " > $READS_PATH$id/$i{d}_${direction}.fq";
 	    my $err = system($command);
 	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
 	    print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
 	} 
 	print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
-    }    
+    }
     # ----------- done removing rRNA matches ----------
 
 
@@ -155,7 +155,7 @@ foreach my $id (@ids) {
 	    
 	    my $command = "${STAR_PATH}STAR ";
 	    $command .= "--genomeDir $GENOME_PATH ";
-	    $command .= "--readFilesIn $READS_PATH$id/$direction.fq ";
+	    $command .= "--readFilesIn $READS_PATH$id/${id}_$direction.fq ";
 	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
 	    $command .= "--outFilterMultimapNmax 10000 ";
 	    $command .= "--outSAMunmapped Within ";
@@ -177,7 +177,7 @@ foreach my $id (@ids) {
 	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
 	    
 	} else {
-	    system("mv $READS_PATH$id/$direction.fq $READS_PATH$id/${direction}_weeded.fq");
+	    system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_weeded.fq");
 	}
     }
 
@@ -322,7 +322,7 @@ die "
      that BWA's index command should be used to
      generate the other files in the directory.
      (This file should be a fasta file.)
- --read-directory <path/>
+ --reads-path <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
      
