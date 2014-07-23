@@ -209,6 +209,8 @@ foreach my $direction (@DIRECTIONS) {
 	
 	# Update min if necessary
 	my $nReads = $lineCount / 4;	
+        print "\tSTATUS: $id $direction has length $lineCount and $nReads reads.\n" if $verbose;
+
 	$minNumReads = $nReads unless defined $minNumReads; # if first loop
 	$minNumReads = $nReads if $nReads < $minNumReads;
     }
