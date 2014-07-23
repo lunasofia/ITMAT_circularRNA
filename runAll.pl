@@ -190,9 +190,11 @@ print "STATUS: Finished match weed-out\n\n";
 
 # ----------- EQUALIZE NUMBER OF READS -----------
 print "STATUS: Equalizing numbers of reads\n";
-my $minNumReads;
-foreach my $id (@ids) {
-    foreach my $direction (@DIRECTIONS) {
+
+# do directions separately, in case of no reverse reads
+foreach my $direction (@DIRECTIONS) {
+    my $minNumReads;
+    foreach my $id (@ids) {
 	# Count lines
 	my $lineCount = 0;
 	open my $fq_fh, '<', "$READS_PATH$id/${direction}_weeded.fq" or die "ERROR\n";
@@ -206,11 +208,10 @@ foreach my $id (@ids) {
 	$minNumReads = $nReads unless $minNumReads; # if first loop
 	$minNumReads = $nReads if $nReads < $minNumReads;
     }
-}
-print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
+    
+    print "\tSTATUS: Minimum number of reads for $direction is $minNumReads\n" if $verbose;
 
-foreach my $id (@ids) {
-    foreach my $direction (@DIRECTIONS) {
+    foreach my $id (@ids) {
 	my $command = $PERL_PREFIX;
 	$command .= "randSubsetFromFQ.pl ";
 	$command .= "--fq-filename $READS_PATH$id/${direction}_weeded.fq ";
