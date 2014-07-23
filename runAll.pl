@@ -21,21 +21,21 @@
 # More detailed specifications are in README.txt
 #
 # Necessary Flags:
-# --bwa-path (-b) <path/>
+# --bwa-path <path/>
 #     This specifies the path to BWA. If, to run
 #     BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
 #     then path should be "../stuff/bwa/bwa-0.7.9a/"
-# --exon-database (-e) <version/>
+# --exon-database <version/>
 #     This specifies the shuffles exon index. Note
 #     that BWA's index command should be used to
 #     generate the other files in the directory.
 #     (This file should be a FastA file.)
-# --reads-path (-r) <path/>
+# --reads-path <path/>
 #     This specifies the directory containing the
 #     ids.txt file and the files with the samples.
 #
 # Optional Flags:
-# --scripts-path (-s) <path/>
+# --scripts-path <path/>
 #     This specifies the path to the file of scripts.
 #     If unspecified, assumed to be in the present
 #     directory.
@@ -54,7 +54,11 @@
 #     Necessary if --star-prealign is specified.
 # --thread-count (-t)
 #     How many threads should be used (while running
-#     STAR - the rest does not yet support threads.)   
+#     STAR - the rest does not yet support threads.)
+# --remove-rrna
+#     If specified, removes rRNA matches. If this is
+#     not specified, then no rRNA ID files must be
+#     specified.   
 # --verbose (-v)
 #     If specified, prints out status messages.
 
@@ -66,7 +70,7 @@ use Getopt::Long;
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
     $READS_PATH, $GENOME_PATH, $NTHREADS,
-    $help, $verbose);
+    $REMOVE_RRNA, $help, $verbose);
 GetOptions('help|?' => \$help,
            'verbose' => \$verbose,
            'bwa-path=s' => \$BWA_PATH,
@@ -76,7 +80,8 @@ GetOptions('help|?' => \$help,
            'min-overlap=i' => \$MIN_OVERLAP,
            'prealign-star=s' => \$STAR_PATH,
            'genome-path=s' => \$GENOME_PATH,
-           'thread-count=i' => \$NTHREADS);
+           'thread-count=i' => \$NTHREADS,
+	   'remove-rrna' => \$REMOVE_RRNA);
 
 
 # Make sure arguments were entered correctly. Also,
@@ -122,22 +127,24 @@ print "STATUS: Successfully loaded ID list\n\n";
 
 print "STATUS: Beginning match weed-out\n";
 foreach my $id (@ids) {
-
-    # ----------- REMOVE rRNA MATCHES ----------
-    print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
-    foreach my $direction (@DIRECTIONS) {
-	system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_old.fq");
-
-	my $command = $PERL_PREFIX;
-	$command .= "removeSetFromFQ.pl ";
-	$command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
-	$command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	$command .= " > $READS_PATH$id/${direction}.fq";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
-    } 
-    print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
+    
+    # ----------- REMOVE rRNA MATCHES (if specified) ----------
+    if($REMOVE_RRNA) {
+	print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
+	foreach my $direction (@DIRECTIONS) {
+	    system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_old.fq");
+	    
+	    my $command = $PERL_PREFIX;
+	    $command .= "removeSetFromFQ.pl ";
+	    $command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
+	    $command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
+	    $command .= " > $READS_PATH$id/${direction}.fq";
+	    my $err = system($command);
+	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+	    print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
+	} 
+	print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
+    }    
     # ----------- done removing rRNA matches ----------
 
 
@@ -306,21 +313,21 @@ die "
  See README.txt for more detailed specifications.
 
  Necessary Flags:
- --bwa-path (-b) <path/>
+ --bwa-path <path/>
      This specifies the path to BWA. If, to run
      BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
      then path should be \"../stuff/bwa/bwa-0.7.9a/\"
- --exon-database (-e) <version/>
+ --exon-database <version/>
      This specifies the shuffles exon index. Note
      that BWA's index command should be used to
      generate the other files in the directory.
      (This file should be a fasta file.)
- --read-directory (-r) <path/>
+ --read-directory <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
      
  Optional Flags:
- --scripts-path (-s) <path/>
+ --scripts-path <path/>
      This specifies the path to the file of scripts.
      If unspecified, assumed to be in the present
      directory.
@@ -339,7 +346,11 @@ die "
      Necessary if --star-prealign is specified.
  --thread-count (-t)
      How many threads should be used (while running
-     STAR - the rest does not yet support threads.)   
+     STAR - the rest does not yet support threads.)
+ --remove-rrna
+     If specified, removes rRNA matches. If this is
+     not specified, then no rRNA ID files must be
+     specified.   
  --verbose (-v)
      If specified, prints out status messages.
 
