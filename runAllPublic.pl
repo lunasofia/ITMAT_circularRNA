@@ -116,12 +116,11 @@ print "STATUS: Successfully loaded ID list\n\n";
 # ---------- done getting ID list ----------
 
 
-print "STATUS: Beginning match weed-out\n";
-    
-    # ----------- REMOVE REGULAR MATCHES (if specified) ----------
 foreach my $id (@ids) {
+    print "STATUS: working on id $id.\n";
+    # ----------- REMOVE REGULAR MATCHES (if specified) ----------
     if($STAR_PATH) {
-	print "\tSTATUS: beginning to pre-align with STAR ($id).\n";
+	print "STATUS: beginning to pre-align with STAR.\n";
 	
 	my $starCommand = "${STAR_PATH}STAR ";
 	$starCommand .= "--genomeDir $GENOME_PATH ";
@@ -147,18 +146,14 @@ foreach my $id (@ids) {
 	print "\tSTATUS: successfully removed STAR matches for $id.\n" if $verbose;
 	
     } else {
+	print "\tSTATUS: not pre-aligning with STAR (not specified).\n" if $verbose;
 	system("cp -l $READS_PATH$id/${id}.fq $READS_PATH$id/weeded.fq");
     }
-
-}
     # ----------- done removing regular matches ----------
- 
-print "STATUS: Finished match weed-out\n\n";
 
 
-foreach my $id (@ids) {
     # ----------- ALIGN TO SHUFFLED DATABASE -----------
-    print "STATUS: Aligning to shuffled exon database.\n";
+    print "STATUS: Aligning to shuffled exon database ($id).\n";
     my $bwaCommand = $BWA_PATH;
     $bwaCommand .= "bwa aln $EXON_DATABASE ";
     $bwaCommand .= "$READS_PATH$id/weeded.fq";
@@ -174,15 +169,12 @@ foreach my $id (@ids) {
     my $bwaErr2 = system($bwaCommand2);
     die "ERROR: call ($bwaCommand2) failed with status $bwaErr2. Exiting.\n\n" if $bwaErr2;
     
-    print "\tSTATUS: Aligned $id.\n" if $verbose;
-    
-    
-    print "STATUS: Done aligning to shuffled exon database.\n";
+    print "STATUS: Done aligning to shuffled exon database ($id).\n";
     # ----------- done aligning to shuffled database -----------
     
     
     # ----------- SELECT EXON-BOUNDARY CROSSING READS ----------
-    print "STATUS: Selecting exon-boundary crossing reads for $id.\n";
+    print "STATUS: Selecting exon-boundary crossing reads ($id).\n";
     my $command = $PERL_PREFIX;
     $command .= "exonBoundaryCrossFilter.pl ";
     $command .= "--exon-info-file ${READS_PATH}exon_info.txt ";
@@ -193,12 +185,12 @@ foreach my $id (@ids) {
     die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
     print "\tSTATUS: exonBoundaryCrossFilter ran successfully\n" if $verbose;
     
-    print "STATUS: Done selectiong exon-boundary crossing reads for $id.\n\n";
+    print "STATUS: Done selectiong exon-boundary crossing reads ($id).\n\n";
     # ----------- done selecting for boundary-crossing ----------
 
 
     # ----------- CONVERT TO FREQUENCY COLUMN ----------
-    print "STATUS: Converting to frequency column.\n";
+    print "STATUS: Converting to frequency column ($id).\n";
     my $command2 = $PERL_PREFIX;
     $command2 .= "samToSpreadsheetCol.pl ";
     $command2 .= "--sam-filename $READS_PATH$id/finalmatch.sam ";
@@ -207,9 +199,11 @@ foreach my $id (@ids) {
     my $err2 = system($command2);
     die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
     print "\tSTATUS: samToSpreadsheetCol ran successfully.\n" if $verbose;
-    print "STATUS: Done converting to frequency column.\n\n";
+    print "STATUS: Done converting to frequency column ($id).\n\n";
     # ----------- done converting to column ----------
 }
+
+print "STATUS: Finished ID-wise processing!\n\n";
 
 
 # ---------- COMBINE INTO SINGLE FINAL SPREADSHEET ----------
