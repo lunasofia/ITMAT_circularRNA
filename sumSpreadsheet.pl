@@ -17,8 +17,10 @@ while(my $line = <>) {
     my @lineVals = split("\t", $line);
     
     if ($lineVals[0] eq '-') {
-	@names = @lineVals[1..$#lineVals];
-	@sums = 0 x $#lineVals;
+	for(my $i = 0; $i < $#lineVals; $i++) {
+	    $names[$i] = $lineVals[$i + 1];
+	    $sums[$i] = 0;
+	}
 	next;
     }
 
