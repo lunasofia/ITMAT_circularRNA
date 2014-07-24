@@ -128,7 +128,8 @@ foreach my $id (@ids) {
 	$starCommand .= "--runThreadN $NTHREADS " if $NTHREADS;
 	$starCommand .= "--outFilterMultimapNmax 10000 ";
 	$starCommand .= "--outSAMunmapped Within ";
-	$starCommand .= "--outFilterMatchNminOverLread .75";
+	$starCommand .= "--outFilterMatchNminOverLread .75 ";
+	$starCommand .= "--genomeLoad LoadAndKeep ";
 	my $starErr = system($starCommand);
 	die "ERROR: call ($starCommand) failed with status $starErr. Exiting.\n\n" if $starErr;
 	
@@ -204,6 +205,15 @@ foreach my $id (@ids) {
 }
 
 print "STATUS: Finished ID-wise processing!\n\n";
+
+# ---------- CLEAR STAR MEMORY ----------
+print "STATUS: Removing STAR-loaded memory.\n";
+my $starCommand = "${STAR_PATH}STAR ";
+$starCommand .= "--genomeLoad=Remove ";
+my $starErr = system($starCommand);
+die "ERROR: call ($starCommand) failed with status $starErr. Exiting.\n\n" if $starErr;
+print "\tSTATUS: successfully removed STAR-loaded memory.\n" if $verbose;
+
 
 
 # ---------- COMBINE INTO SINGLE FINAL SPREADSHEET ----------
