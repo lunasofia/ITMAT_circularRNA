@@ -21,7 +21,8 @@ GetOptions('help|?' => \$help,
 	   'fq-filename=s' => \$FQ_FILE,
 	   'n-output-entries=i' => \$N_OUT);
 
-&usage unless ($FQ_FILE && $N_OUT);
+&usage unless ($FQ_FILE);
+&usage unless defined $N_OUT;
 
 # Hash to hold the fq entries. After adding enough and
 # swapping according to algorithm, prints to file.
