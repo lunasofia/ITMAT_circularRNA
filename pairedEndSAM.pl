@@ -87,11 +87,12 @@ open my $outfq_fh, '>', $OUT_FQ_FILE or die "ERROR: could not open (create) fiel
 foreach my $FILE (@IN_FQ_FILES) {
     open my $infq_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
     while(my $nameline = <$infq_fh>) {
-	next unless ($. % 4 == 0);
+	next unless ($. % 4 == 1);
 	
 	chomp($nameline);
 	my @namevals = split(" ", $nameline);
 	my $id = substr $namevals[0], 1;
+	warn "ID: $id\n"; # PUT IN FOR TESTING - REMOVE
 	
 	next unless $crossingEvents{ $id };
 	
