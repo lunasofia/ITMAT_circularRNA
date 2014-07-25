@@ -3,27 +3,32 @@
 # ITMAT at UPenn
 # --------------------------------------
 # Given a particular exon-exon boundary crossing, finds
-# out information about the paired ends. As of right now,
-# outputs as a SAM file (without any headers), with all
-# reads that cross that boundary and all their pairs, either
-# from STAR or BWA.
+# out information about the paired ends. Outputs a SAM
+# file of all the paired ends that appear in any of the
+# input SAM files, and writes all others to a fastq
+# file.
 
 use strict;
 use warnings;
 use Getopt::Long;
 
-my (@CROSS_SAM_FILES, @REG_SAM_FILES, $BOUNDARY, $help); 
+my (@CROSS_SAM_FILES, @REG_SAM_FILES, $FQ_FILE, $BOUNDARY, $help); 
 
 GetOptions('help|?' => \$help,
 	   'crossing-sam-file=s' => \@CROSS_SAM_FILES,
 	   'regular-sam-file=s' => \@REG_SAM_FILES,
+	   'fastq-file=s' => \$FQ_FILE,
 	   'boundary-name=s' => \$BOUNDARY);
 &usage if $help;
-&usage unless ($CROSS_SAM_FILES[0] && $REG_SAM_FILES[0] && $BOUNDARY);
+&usage unless ($CROSS_SAM_FILES[0] && $FQ_FILE && $BOUNDARY);
 
 # Constants for reading SAM files
 my $S_QNAME = 0;
 my $S_RNAME = 2;
+
+# Constants for readinf FQ files
+my $F_QNAME = 0;
+my $F_SEQ = 1;
 
 # First, find all the IDs associated with boundary-crossing
 # events and put them into a hash.
@@ -36,8 +41,9 @@ foreach my $FILE (@CROSS_SAM_FILES) {
 	my @samVals = split("\t", $line);
 	next unless $samVals[$S_RNAME] eq $BOUNDARY;
 	
-	# add to hash
-	$crossingEvents{ $samVals[$S_QNAME] } = 1;
+	# add to hash with value 2, because we need to find
+	# 2 reads with this ID before we're done
+	$crossingEvents{ $samVals[$S_QNAME] } = 2;
     }
     close $cross_sam_fh;
 }
@@ -51,7 +57,7 @@ foreach my $FILE (@CROSS_SAM_FILES) {
 	next unless $crossingEvents{ $samVals[$S_QNAME] };
 
 	print "$line\n";
-	$crossingEvents{ $samVals[$S_QNAME] } += 2;
+	$crossingEvents{ $samVals[$S_QNAME] } -= 1;
 	
     }
     close $cross_sam_fh;
@@ -67,9 +73,25 @@ foreach my $FILE (@REG_SAM_FILES) {
 	next unless $crossingEvents{ $samVals[$S_QNAME] };
 	
 	print "$line\n";
-	$crossingEvents{ $samVals[$S_QNAME] } += 16;
+	$crossingEvents{ $samVals[$S_QNAME] } -= 1;
     }
     close $reg_sam_fh;
+}
+
+open my $fq_fh, '<', $FQ_FILE or die "ERROR: could not open file $FQ_FILE\n";
+while(my $nameline = <$fq_fh>) {
+    chomp($nameline);
+    my @namevals = split(" ", $nameline);
+    my $id = substr $namevals[0], 1;
+
+    next unless $crossingEvents{ $id };
+    
+    print "$nameline\n";
+    for(my $i = 1; $i < 4; $i++) {
+	my $line = <$fq_fh>;
+	chomp($line);
+	print "$line\n";
+    }
 }
 
 sub usage {
@@ -82,7 +104,10 @@ die "
 
  Necessary flags:
  --crossing-sam-file
- --regular-sam-file
+ --fastq-file
  --boundary-name
+
+ Optional flags:
+ --regular-sam-file
 
 "}
