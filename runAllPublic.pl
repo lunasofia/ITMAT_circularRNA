@@ -6,7 +6,9 @@
 # running on the public data, which is already equalized in
 # number of reads and also does not have forward and backward
 # reads. In addition, the directory structure is slightly
-# different, because this is used for so many reads.
+# different, because this is used for so many reads. Finally, the
+# reads have already been aligned with STAR and those alignment
+# files are used.
 # 
 # The directories must be arranged in the following structure:
 #
@@ -34,6 +36,11 @@
 #     ids.txt file and the files with the samples.
 #
 # Optional Flags:
+# --ids-filename <filename>
+#     So that the script can be run simultaneously with
+#     different id sets, optionally takes in the name of
+#     the id file. If none is given, assumes ids.txt is
+#     the name of the file.
 # --scripts-path <path/>
 #     This specifies the path to the file of scripts.
 #     If unspecified, assumed to be in the present
@@ -42,18 +49,6 @@
 #     This specifies the minimum number of base pairs
 #     that must cross an exon-exon boundary in order
 #     to count the read as evidence of shuffles exons
-# --prealign-star (-p) <path/>
-#     If specified, pre-aligns with STAR. The path
-#     to STAR must be specified. If, to run STAR,
-#     you would write ../stuff/star/STAR then the
-#     the path should be "../stuff/star/". The STAR
-#     directory must also contain, in index/, the
-#     name of the genome.
-# --genome-path (-g) <name>
-#     Necessary if --star-prealign is specified.
-# --thread-count (-t)
-#     How many threads should be used (while running
-#     STAR - the rest does not yet support threads.)   
 # --verbose (-v)
 #     If specified, prints out status messages.
 
@@ -63,9 +58,8 @@ use warnings;
 use Getopt::Long;
 
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
-    $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $READS_PATH, $GENOME_PATH, $NTHREADS,
-    $help, $verbose);
+    $SCRIPTS_PATH, $MIN_OVERLAP, $READS_PATH,
+    $IDS_FILENAME, $help, $verbose);
 GetOptions('help|?' => \$help,
            'verbose' => \$verbose,
            'bwa-path=s' => \$BWA_PATH,
@@ -73,21 +67,14 @@ GetOptions('help|?' => \$help,
            'reads-path=s' => \$READS_PATH,
            'scripts-path=s' => \$SCRIPTS_PATH,
            'min-overlap=i' => \$MIN_OVERLAP,
-           'prealign-star=s' => \$STAR_PATH,
-           'genome-path=s' => \$GENOME_PATH,
-           'thread-count=i' => \$NTHREADS);
+	   'ids-filename=s' => \$IDS_FILENAME);
 
 
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
 # there.
 &usage if $help;
-&usage unless ($BWA_PATH && $READS_PATH);
-if($STAR_PATH) {
-    &usage unless $GENOME_PATH;
-    $GENOME_PATH .= "/" unless $GENOME_PATH =~ /\/$/;
-    $STAR_PATH .= "/" unless $STAR_PATH =~ /\/$/;
-}
+&usage unless ($BWA_PATH && $READS_PATH && $EXON_DATABASE);
 if($SCRIPTS_PATH) {
     $SCRIPTS_PATH .= "/" unless $SCRIPTS_PATH =~ /\/$/;
 }
@@ -97,14 +84,16 @@ $READS_PATH .= "/" unless $READS_PATH =~ /\/$/;
 # Prefix for each perl script
 my $PERL_PREFIX = "perl ";
 $PERL_PREFIX .= $SCRIPTS_PATH if $SCRIPTS_PATH;
-	
+
+# Default IDs filename
+$IDS_FILENAME = "ids.txt" unless $IDS_FILENAME;
 
 # List of IDs (populated from ids.txt)
 my @ids;
 
 
 # ----------- GET ID LIST ----------
-my $ID_FILE = $READS_PATH . "ids.txt";
+my $ID_FILE = $READS_PATH . $IDS_FILENAME;
 print "STATUS: Getting ID list from $ID_FILE\n";
 open my $id_fh, '<', $ID_FILE or die "ERROR: could not open id file ($ID_FILE)\n";
 while(<$id_fh>) {
@@ -118,38 +107,21 @@ print "STATUS: Successfully loaded ID list\n\n";
 
 foreach my $id (@ids) {
     print "STATUS: working on id $id.\n";
-    # ----------- REMOVE REGULAR MATCHES (if specified) ----------
-    if($STAR_PATH) {
-	print "STATUS: beginning to pre-align with STAR.\n";
+
+    # ----------- REMOVE REGULAR MATCHES ----------
+    print "STATUS: Removing STAR-aligned matches ($id).\n";
+    
+    system("mv Aligned.out.sam $READS_PATH$id/"); # FIX THIS!!
+    
+    my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
+    $unmatchedCommand .= "--fastq-file $READS_PATH$id/${id}.fq ";
+    $unmatchedCommand .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
+    $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
+    my $unmatchedErr = system($unmatchedCommand);
+    die "ERROR: call ($unmatchedCommand) failed with status $unmatchedErr. Exiting.\n\n" if $unmatchedErr;
+    
+    print "\tSTATUS: successfully removed STAR matches ($id).\n" if $verbose;
 	
-	my $starCommand = "${STAR_PATH}STAR ";
-	$starCommand .= "--genomeDir $GENOME_PATH ";
-	$starCommand .= "--readFilesIn $READS_PATH$id/${id}.fq ";
-	$starCommand .= "--runThreadN $NTHREADS " if $NTHREADS;
-	$starCommand .= "--outFilterMultimapNmax 10000 ";
-	$starCommand .= "--outSAMunmapped Within ";
-	$starCommand .= "--outFilterMatchNminOverLread .75 ";
-	$starCommand .= "--genomeLoad LoadAndKeep ";
-	my $starErr = system($starCommand);
-	die "ERROR: call ($starCommand) failed with status $starErr. Exiting.\n\n" if $starErr;
-	
-	system("mv Aligned.out.sam $READS_PATH$id/");
-	
-	print "\tSTATUS: successfully pre-aligned $id with STAR.\n"  if $verbose;
-	
-	my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
-	$unmatchedCommand .= "--fastq-file $READS_PATH$id/${id}.fq ";
-	$unmatchedCommand .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
-	$unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
-	my $unmatchedErr = system($unmatchedCommand);
-	die "ERROR: call ($unmatchedCommand) failed with status $unmatchedErr. Exiting.\n\n" if $unmatchedErr;
-	
-	print "\tSTATUS: successfully removed STAR matches for $id.\n" if $verbose;
-	
-    } else {
-	print "\tSTATUS: not pre-aligning with STAR (not specified).\n" if $verbose;
-	system("cp -l $READS_PATH$id/${id}.fq $READS_PATH$id/weeded.fq");
-    }
     # ----------- done removing regular matches ----------
 
 
@@ -206,16 +178,6 @@ foreach my $id (@ids) {
 
 print "STATUS: Finished ID-wise processing!\n\n";
 
-# ---------- CLEAR STAR MEMORY ----------
-print "STATUS: Removing STAR-loaded memory.\n";
-my $starCommand = "${STAR_PATH}STAR ";
-$starCommand .= "--genomeLoad=Remove ";
-my $starErr = system($starCommand);
-die "ERROR: call ($starCommand) failed with status $starErr. Exiting.\n\n" if $starErr;
-print "\tSTATUS: successfully removed STAR-loaded memory.\n" if $verbose;
-
-
-
 # ---------- COMBINE INTO SINGLE FINAL SPREADSHEET ----------
 print "STATUS: Combining into single final spreadsheet.\n";
 my $command = $PERL_PREFIX;
@@ -234,7 +196,6 @@ print "STATUS: Done combining.\n\n";
 
 sub usage {
 die "
- See README.txt for more detailed specifications.
 
  Necessary Flags:
  --bwa-path <path/>
@@ -245,12 +206,17 @@ die "
      This specifies the shuffles exon index. Note
      that BWA's index command should be used to
      generate the other files in the directory.
-     (This file should be a fasta file.)
+     (This file should be a FastA file.)
  --reads-path <path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
-     
+
  Optional Flags:
+ --ids-filename <filename>
+     So that the script can be run simultaneously with
+     different id sets, optionally takes in the name of
+     the id file. If none is given, assumes ids.txt is
+     the name of the file.
  --scripts-path <path/>
      This specifies the path to the file of scripts.
      If unspecified, assumed to be in the present
@@ -259,24 +225,7 @@ die "
      This specifies the minimum number of base pairs
      that must cross an exon-exon boundary in order
      to count the read as evidence of shuffles exons
- --prealign-star (-p) <path/>
-     If specified, pre-aligns with STAR. The path
-     to STAR must be specified. If, to run STAR,
-     you would write ../stuff/star/STAR then the
-     the path should be \"../stuff/star/\". The STAR
-     directory must also contain, in index/, the
-     name of the genome.
- --genome-path (-g) <name>
-     Necessary if --star-prealign is specified.
- --thread-count (-t)
-     How many threads should be used (while running
-     STAR - the rest does not yet support threads.)
- --remove-rrna
-     If specified, removes rRNA matches. If this is
-     not specified, then no rRNA ID files must be
-     specified.   
  --verbose (-v)
      If specified, prints out status messages.
-
 "
 }
