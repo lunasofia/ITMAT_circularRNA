@@ -31,6 +31,8 @@ my $S_RNAME = 2;
 # events and put them into a hash.
 my %crossingEvents = ();
 
+warn "\nSTATUS: Beginning to look for IDs\n";
+my $nIDsFound = 0;
 foreach my $FILE (@CROSS_SAM_FILES) {
     open my $cross_sam_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
     while(my $line = <$cross_sam_fh>) {
@@ -41,11 +43,13 @@ foreach my $FILE (@CROSS_SAM_FILES) {
 	# add to hash with value 2, because we need to find
 	# 2 reads with this ID before we're done
 	$crossingEvents{ $samVals[$S_QNAME] } = 2;
+	$nIDsFound++;
     }
     close $cross_sam_fh;
 }
+warn "STATUS: Finished looking for IDs; $nIDsFound found.\n";
 
-
+warn "STATUS: About to look through cross SAM files for IDs.\n";
 foreach my $FILE (@CROSS_SAM_FILES) {
     open my $cross_sam_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
     while(my $line = <$cross_sam_fh>) {
@@ -59,7 +63,9 @@ foreach my $FILE (@CROSS_SAM_FILES) {
     }
     close $cross_sam_fh;
 }
+warn "STATUS: Finished looking through cross SAM files.\n";
 
+warn "STATUS: Starting to look through regular SAM files.\n";
 foreach my $FILE (@REG_SAM_FILES) {    
     # Read through full SAM file, printing all with IDs that
     # match the hash.
@@ -74,7 +80,9 @@ foreach my $FILE (@REG_SAM_FILES) {
     }
     close $reg_sam_fh;
 }
+warn "STATUS: Done looking through regular SAM files.\n";
 
+warn "STATUS: About to look through fq files.\n";
 open my $outfq_fh, '>', $OUT_FQ_FILE or die "ERROR: could not open (create) fiel $OUT_FQ_FILE\n";
 foreach my $FILE (@IN_FQ_FILES) {
     open my $infq_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
