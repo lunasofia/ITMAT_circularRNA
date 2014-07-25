@@ -12,16 +12,16 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my (@CROSS_SAM_FILES, @REG_SAM_FILES, $IN_FQ_FILE, $OUT_FQ_FILE, $BOUNDARY, $help); 
+my (@CROSS_SAM_FILES, @REG_SAM_FILES, @IN_FQ_FILES, $OUT_FQ_FILE, $BOUNDARY, $help); 
 
 GetOptions('help|?' => \$help,
 	   'crossing-sam-file=s' => \@CROSS_SAM_FILES,
 	   'regular-sam-file=s' => \@REG_SAM_FILES,
-	   'fastq-file=s' => \$IN_FQ_FILE,
+	   'fastq-file=s' => \@IN_FQ_FILES,
 	   'fastq-output=s' => \$OUT_FQ_FILE,
 	   'boundary-name=s' => \$BOUNDARY);
 &usage if $help;
-&usage unless ($CROSS_SAM_FILES[0] && $IN_FQ_FILE && $OUT_FQ_FILE && $BOUNDARY);
+&usage unless ($CROSS_SAM_FILES[0] && $IN_FQ_FILES[0] && $OUT_FQ_FILE && $BOUNDARY);
 
 # Constants for reading SAM files
 my $S_QNAME = 0;
@@ -75,25 +75,28 @@ foreach my $FILE (@REG_SAM_FILES) {
     close $reg_sam_fh;
 }
 
-open my $infq_fh, '<', $IN_FQ_FILE or die "ERROR: could not open file $IN_FQ_FILE\n";
 open my $outfq_fh, '>', $OUT_FQ_FILE or die "ERROR: could not open (create) fiel $OUT_FQ_FILE\n";
-while(my $nameline = <$infq_fh>) {
-    next unless ($. % 4 == 0);
-    
-    chomp($nameline);
-    my @namevals = split(" ", $nameline);
-    my $id = substr $namevals[0], 1;
-
-    next unless $crossingEvents{ $id };
-    
-    print "$nameline\n";
-    for(my $i = 1; $i < 4; $i++) {
-	my $line = <$infq_fh>;
-	chomp($line);
-	print $outfq_fh "$line\n";
+foreach my $FILE (@IN_FQ_FILES) {
+    open my $infq_fh, '<', $FILE or die "ERROR: could not open file $FILE\n";
+    while(my $nameline = <$infq_fh>) {
+	next unless ($. % 4 == 0);
+	
+	chomp($nameline);
+	my @namevals = split(" ", $nameline);
+	my $id = substr $namevals[0], 1;
+	
+	next unless $crossingEvents{ $id };
+	
+	print "$nameline\n";
+	for(my $i = 1; $i < 4; $i++) {
+	    my $line = <$infq_fh>;
+	    chomp($line);
+	    print $outfq_fh "$line\n";
+	}
     }
+    close $infq_fh;
 }
-close $infq_fh, $outfq_fh;
+close $outfq_fh;
 
 sub usage {
 die "
