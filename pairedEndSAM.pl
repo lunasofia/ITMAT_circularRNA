@@ -12,23 +12,20 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my (@CROSS_SAM_FILES, @REG_SAM_FILES, $FQ_FILE, $BOUNDARY, $help); 
+my (@CROSS_SAM_FILES, @REG_SAM_FILES, $IN_FQ_FILE, $OUT_FQ_FILE, $BOUNDARY, $help); 
 
 GetOptions('help|?' => \$help,
 	   'crossing-sam-file=s' => \@CROSS_SAM_FILES,
 	   'regular-sam-file=s' => \@REG_SAM_FILES,
-	   'fastq-file=s' => \$FQ_FILE,
+	   'fastq-file=s' => \$IN_FQ_FILE,
+	   'fastq-output=s' => \$OUT_FQ_FILE,
 	   'boundary-name=s' => \$BOUNDARY);
 &usage if $help;
-&usage unless ($CROSS_SAM_FILES[0] && $FQ_FILE && $BOUNDARY);
+&usage unless ($CROSS_SAM_FILES[0] && $IN_FQ_FILE && $OUT_FQ_FILE && $BOUNDARY);
 
 # Constants for reading SAM files
 my $S_QNAME = 0;
 my $S_RNAME = 2;
-
-# Constants for readinf FQ files
-my $F_QNAME = 0;
-my $F_SEQ = 1;
 
 # First, find all the IDs associated with boundary-crossing
 # events and put them into a hash.
@@ -78,8 +75,11 @@ foreach my $FILE (@REG_SAM_FILES) {
     close $reg_sam_fh;
 }
 
-open my $fq_fh, '<', $FQ_FILE or die "ERROR: could not open file $FQ_FILE\n";
-while(my $nameline = <$fq_fh>) {
+open my $infq_fh, '<', $IN_FQ_FILE or die "ERROR: could not open file $IN_FQ_FILE\n";
+open my $outfq_fh, '>', $OUT_FQ_FILE or die "ERROR: could not open (create) fiel $OUT_FQ_FILE\n";
+while(my $nameline = <$infq_fh>) {
+    next unless ($. % 4 == 0);
+    
     chomp($nameline);
     my @namevals = split(" ", $nameline);
     my $id = substr $namevals[0], 1;
@@ -88,11 +88,12 @@ while(my $nameline = <$fq_fh>) {
     
     print "$nameline\n";
     for(my $i = 1; $i < 4; $i++) {
-	my $line = <$fq_fh>;
+	my $line = <$infq_fh>;
 	chomp($line);
-	print "$line\n";
+	print $outfq_fh "$line\n";
     }
 }
+close $infq_fh, $outfq_fh;
 
 sub usage {
 die "
@@ -104,7 +105,11 @@ die "
 
  Necessary flags:
  --crossing-sam-file
+     Uses these files to find the IDs of the events that
+     cross the specified boundary. Also prints out the
+     entries for those events.
  --fastq-file
+ --fastq-output
  --boundary-name
 
  Optional flags:
