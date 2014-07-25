@@ -92,7 +92,6 @@ foreach my $FILE (@IN_FQ_FILES) {
 	chomp($nameline);
 	my @namevals = split(" ", $nameline);
 	my $id = substr $namevals[0], 1;
-	warn "ID: $id\n"; # PUT IN FOR TESTING - REMOVE
 	
 	next unless $crossingEvents{ $id };
 	
