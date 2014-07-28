@@ -36,7 +36,7 @@ while(my $line = <$genes_fd>) {
     my @data = split("\t", $line);
     
     next if $. == 1; # Don't want to use the first line.
-    next unless @data[$G_UC_ID]; # Don't want empty lines
+    next unless $data[$G_UC_ID]; # Don't want empty lines
 
     $ucIDtoGene{ $data[$G_UC_ID] } = $data[$G_GENE_SYMBOL];
 }
