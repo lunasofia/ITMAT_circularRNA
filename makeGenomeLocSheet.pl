@@ -69,7 +69,7 @@ warn "STATUS: done loading information about exons.\n";
 
 warn "STATUS: iterating through frequencies spreadsheet.\n";
 # Now that everything is loaded, iterate through frequencies spreadsheet
-my $linesPrinted;
+my $linesPrinted = 0;
 open my $freq_fq, '<', $FREQUENCIES or die "ERROR: could not open file $FREQUENCIES\n";
 while(my $line = <$freq_fq>) {
     chomp($line);
