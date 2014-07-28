@@ -111,11 +111,9 @@ foreach my $id (@ids) {
     # ----------- REMOVE REGULAR MATCHES ----------
     print "STATUS: Removing STAR-aligned matches ($id).\n";
     
-    system("mv Aligned.out.sam $READS_PATH$id/"); # FIX THIS!!
-    
     my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
     $unmatchedCommand .= "--fastq-file $READS_PATH$id/${id}.fq ";
-    $unmatchedCommand .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
+    $unmatchedCommand .= "--sam-file $READS_PATH$id/STAR_aligned.sam ";
     $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
     my $unmatchedErr = system($unmatchedCommand);
     die "ERROR: call ($unmatchedCommand) failed with status $unmatchedErr. Exiting.\n\n" if $unmatchedErr;
