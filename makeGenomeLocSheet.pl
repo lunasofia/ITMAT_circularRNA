@@ -78,19 +78,16 @@ while(my $line = <$freq_fq>) {
     # Skip the header (but print out file header)
     if($vals[0] eq '-') {
 	&printHeader(@vals);
-	warn "printed header: $line\n";
 	next;
     }
 
     # Find total frequency
     my $freqSum = 0;
-    for(my $i = 1; $i < $#vals; $i++) {
+    for(my $i = 1; $i <= $#vals; $i++) {
 	$freqSum += $vals[$i];
     }
-    unless ($freqSum >= $MIN_FREQ) {
-	warn "frequency sum too low: $line\n";
-	next;
-    }    
+    next unless ($freqSum >= $MIN_FREQ);
+	 
 
     # Print out entry
     &printInfo($vals[0]);
