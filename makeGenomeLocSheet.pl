@@ -54,7 +54,7 @@ my $E_EXON_END = 5;
 open my $exons_fd, '<', $EXON_REF or die "ERROR: could not open file $EXON_REF\n";
 while(my $line = <$exons_fd>) {
     chomp($line);
-    my @vals = split("\t", $line);
+    my @vals = split(" ", $line);
     
     my $key = substr $vals[$E_GENE_NAME], 1;
     $key .= "-$vals[$E_EXON_NUM]";
