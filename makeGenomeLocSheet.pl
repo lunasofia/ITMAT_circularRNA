@@ -73,7 +73,7 @@ my $linesPrinted = 0;
 open my $freq_fq, '<', $FREQUENCIES or die "ERROR: could not open file $FREQUENCIES\n";
 while(my $line = <$freq_fq>) {
     chomp($line);
-    my @vals = split("/t", $line);
+    my @vals = split("\t", $line);
 
     # Skip the header (but print out file header)
     if($vals[0] eq '-') {
