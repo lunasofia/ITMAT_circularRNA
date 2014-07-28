@@ -87,7 +87,7 @@ while(my $line = <$freq_fq>) {
     for(my $i = 1; $i < $#vals; $i++) {
 	$freqSum += $vals[$i];
     }
-    unless $freqSum >= $MIN_FREQ {
+    unless ($freqSum >= $MIN_FREQ) {
 	warn "frequency sum too low: $line\n";
 	next;
     }    
