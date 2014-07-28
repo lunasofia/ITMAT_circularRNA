@@ -41,7 +41,9 @@ while(my $line = <$found_fh>) {
 	next;
     }
     
-    $foundLines{ &makeKey($line) } = &makeValue($line);
+    my $key = &makeKey($line);
+    my $val = &makeValue($line);
+    $foundLines{ $key } = $val;
 }
 close $found_fh;
 
