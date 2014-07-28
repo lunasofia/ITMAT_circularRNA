@@ -61,7 +61,6 @@ while(my $line = <$circbase_fh>) {
     my $foundLineEnd = $foundLines{ &makeKey($line) };
     if($foundLineEnd) {
 	print "$line$foundLineEnd\n";
-	warn "found in both: &makeKey($line)!\n";
 	delete $foundLines{ &makeKey($line) };
     } else {
 	print $circout_fh "$line\n"
@@ -99,6 +98,7 @@ sub makeValue {
     for(my $i = 3; $i <= $#vals; $i++) {
 	$value .= "\t$vals[$i]";
     }
+    return $value;
 }
 
 
