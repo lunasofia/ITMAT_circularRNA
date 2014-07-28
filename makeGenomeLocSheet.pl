@@ -131,7 +131,7 @@ sub printHeader {
     for(my $i = 1; $i <= $#_; $i++) {
 	print "\t$_[$i]";
     }
-    
+    print "\n";
 }
 
 
