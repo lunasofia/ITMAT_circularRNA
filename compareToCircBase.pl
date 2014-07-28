@@ -59,6 +59,7 @@ while(my $line = <$circbase_fh>) {
     my $foundLineEnd = $foundLines{ &makeKey($line) };
     if($foundLineEnd) {
 	print "$line$foundLineEnd\n";
+	warn "found in both: &makeKey($line)!\n";
 	delete $foundLines{ &makeKey($line) };
     } else {
 	print $circout_fh "$line\n"
@@ -72,7 +73,8 @@ close $circout_fh;
 open my $foundout_fh, '>', $FOUND_ONLY_OUT or die "Cound not open/create $FOUND_ONLY_OUT\n";
 print $foundout_fh "$foundHeader\n";
 foreach my $key (keys %foundLines) {
-    print $foundout_fh "$key$foundLines{$key}\n";
+    my $val = $foundLines{$key};
+    print $foundout_fh "$key$val\n";
 }
 close $foundout_fh;
 
