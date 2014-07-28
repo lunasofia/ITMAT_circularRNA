@@ -119,7 +119,7 @@ sub printInfo {
     my $geneSymb = $ucIDtoGene{ $junctionVals[0] };
     $geneSymb = "*" unless $geneSymb;
 
-    print "$chr\t$start\t$end\t$geneSymb";
+    print "$chr\t$start\t$end\t$geneSymb\t";
 }
 
 
