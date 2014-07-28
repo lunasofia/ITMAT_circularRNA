@@ -41,9 +41,10 @@ while(my $line = <$genes_fd>) {
     $ucIDtoGene{ $data[$G_UC_ID] } = $data[$G_GENE_SYMBOL];
 }
 close $genes_fd;
-
+warn "STATUS: done loading info about genes.\n";
 
 # Load information about exons
+warn "STATUS: loading information about exons.\n";
 my %exonToLoc = ();
 
 my $E_GENE_NAME = 0;
@@ -64,9 +65,11 @@ while(my $line = <$exons_fd>) {
     $exonToLoc{ $key } = \@locData;
 }
 close $exons_fd;
+warn "STATUS: done loading information about exons.\n";
 
-
+warn "STATUS: iterating through frequencies spreadsheet.\n";
 # Now that everything is loaded, iterate through frequencies spreadsheet
+my $linesPrinted;
 open my $freq_fq, '<', $FREQUENCIES or die "ERROR: could not open file $FREQUENCIES\n";
 while(my $line = <$freq_fq>) {
     chomp($line);
@@ -84,14 +87,15 @@ while(my $line = <$freq_fq>) {
 	$freqSum += $vals[$i];
     }
     next unless $freqSum >= $MIN_FREQ;
-
+    
     # Print out entry
     &printInfo($vals[0]);
     print "$line\n";
+    $linesPrinted++;
 }
 
 close $freq_fq;
-
+warn "STATUS: done iterating through frequencies spreadsheet. $linesPrinted lines printed.\n";
 
 
 # Takes in a junction ID and prints out the information about
