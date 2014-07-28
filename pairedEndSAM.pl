@@ -95,7 +95,7 @@ foreach my $FILE (@IN_FQ_FILES) {
 	
 	next unless $crossingEvents{ $id };
 	
-	print "$nameline\n";
+	print $outfq_fh "$nameline\n";
 	for(my $i = 1; $i < 4; $i++) {
 	    my $line = <$infq_fh>;
 	    chomp($line);
