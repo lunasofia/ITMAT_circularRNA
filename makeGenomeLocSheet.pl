@@ -34,8 +34,9 @@ open my $genes_fd, '<', $GENE_NAME_REF or die "ERROR: could not open file $GENE_
 while(my $line = <$genes_fd>) {
     chomp($line);
     my @data = split("\t", $line);
-
-    next if $. == 1; # Don't want to use the first line.                                                                                                                                   
+    
+    next if $. == 1; # Don't want to use the first line.
+    next unless @data[$G_UC_ID]; # Don't want empty lines
 
     $ucIDtoGene{ $data[$G_UC_ID] } = $data[$G_GENE_SYMBOL];
 }
@@ -109,7 +110,9 @@ sub printInfo {
     my $chr = $firstLocData->[0];
     my $start = $secondLocData->[1] - 1;
     my $end = $firstLocData->[2];
+
     my $geneSymb = $ucIDtoGene{ $junctionVals[0] };
+    $geneSymb = "*" unless $geneSymb;
 
     print "$chr\t$start\t$end\t$geneSymb";
 }
