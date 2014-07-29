@@ -19,7 +19,7 @@ while(my $line = <>) {
     my @vals = split(" ", $line);
     
     # If this is the first line
-    if($vals[0] eq "-") {
+    if($. == 1) {
 	print $line;
 	next;
     }
