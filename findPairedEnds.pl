@@ -1,4 +1,4 @@
-# File: pairedEndSAM.pl
+# File: findPairedEnds.pl
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # --------------------------------------
