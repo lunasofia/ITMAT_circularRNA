@@ -27,8 +27,8 @@ $MIN_FREQ = 2 unless defined $MIN_FREQ;
 warn "STATUS: loading information about genes.\n";
 my %ucIDtoGene = ();
 
-my $G_GENE_SYMBOL = 0;
-my $G_UC_ID = 1;
+my $G_GENE_SYMBOL = 1;
+my $G_UC_ID = 0;
 
 open my $genes_fd, '<', $GENE_NAME_REF or die "ERROR: could not open file $GENE_NAME_REF\n";
 while(my $line = <$genes_fd>) {
