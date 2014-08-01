@@ -38,7 +38,10 @@ while(my $line = <$genes_fd>) {
     next if $. == 1; # Don't want to use the first line.
     next unless $data[$G_UC_ID]; # Don't want empty lines
 
+
+    warn "$data[$G_UC_ID] --> $data[$G_GENE_SYMBOL]\n";
     $ucIDtoGene{ $data[$G_UC_ID] } = $data[$G_GENE_SYMBOL];
+    
 }
 close $genes_fd;
 warn "STATUS: done loading info about genes.\n";
@@ -117,6 +120,7 @@ sub printInfo {
     my $end = $firstLocData->[2];
 
     my $geneSymb = $ucIDtoGene{ $junctionVals[0] };
+    warn "symbol for $junctionVals[0] found: $geneSymb\n" if $geneSymb;
     $geneSymb = "*" unless $geneSymb;
 
     print "$chr\t$start\t$end\t$geneSymb\t";
