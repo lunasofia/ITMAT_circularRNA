@@ -12,14 +12,14 @@
 #   |--- Sample_1/
 #           |--- Sample_1.fq
 #           |--- Sample_1.sam
-#           |--- Sample_1_ribosomalids.txt
+#           |--- Sample_1_removeIDs.txt
 #   |--- Sample_2/
 #           |--- Sample_2.fq
 #           |--- Sample_2.sam
-#           |--- Sample_2_ribosomalids.txt
+#           |--- Sample_2_removeIDs.txt
 #
-# Note that the ribosomal id files are only necessary if the
-# flag remove-rrna is specified.
+# Note that the remove id files are only necessary if the
+# flag normalize-fully is specified.
 # More detailed specifications are in README.txt.
 #
 # Necessary Flags:
@@ -45,10 +45,10 @@
 #     This specifies the minimum number of base pairs
 #     that must cross an exon-exon boundary in order
 #     to count the read as evidence of shuffles exons
-# --remove-rrna
-#     If specified, removes rRNA matches. If this is
-#     not specified, then no rRNA ID files must be
-#     specified.   
+# --normalize-fully
+#     If specified, removes rRNA and mitochondrial  matches.
+#     If this is not specified, then no rRNA ID or
+#     mitochondrial ID files must be specified.   
 # --verbose (-v)
 #     If specified, prints out status messages.
 
@@ -59,7 +59,7 @@ use Getopt::Long;
 
 my ($BWA_PATH, $EXON_DATABASE,
     $SCRIPTS_PATH, $MIN_OVERLAP, $READS_PATH,
-    $REMOVE_RRNA, $help, $verbose);
+    $NORMALIZE, $help, $verbose);
 GetOptions('help|?' => \$help,
            'verbose' => \$verbose,
            'bwa-path=s' => \$BWA_PATH,
@@ -67,7 +67,7 @@ GetOptions('help|?' => \$help,
            'reads-path=s' => \$READS_PATH,
            'scripts-path=s' => \$SCRIPTS_PATH,
            'min-overlap=i' => \$MIN_OVERLAP,
-	   'remove-rrna' => \$REMOVE_RRNA);
+	   'normalize-fully' => \$NORMALIZE);
 
 
 # Make sure arguments were entered correctly. Also,
@@ -106,29 +106,24 @@ print "STATUS: Successfully loaded ID list\n\n";
 print "STATUS: Beginning match weed-out\n";
 foreach my $id (@ids) {
     
-    # ----------- REMOVE rRNA MATCHES (if specified) ----------
-    if($REMOVE_RRNA) {
-	print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
+    # ----------- REMOVE rRNA AND MITOCHONDRIAL MATCHES (if specified) ----------
+    if($NORMALIZE) {
+	print "\tSTATUS: Removing rRNA and mitochondrial matches for $id\n" if $verbose;
 	system("mv $READS_PATH$id/${id}.fq $READS_PATH$id/original.fq");
 	
-	my $RNAcommand = $PERL_PREFIX;
-	$RNAcommand .= "removeSetFromFQ.pl ";
-	$RNAcommand .= "--fq-file $READS_PATH$id/original.fq";
-	$RNAcommand .= "--idlist-file $READS_PATH$id/${id}_ribosomalids.txt";
-	$RNAcommand .= " > $READS_PATH$id/${id}.fq";
-	my $RNAerr = system($RNAcommand);
-	die "ERROR: call ($RNAcommand) failed with status $RNAerr. Exiting.\n\n" if $RNAerr;
+	my $weedCommand = $PERL_PREFIX;
+	$weedCommand .= "removeSetFromFQ.pl ";
+	$weedCommand .= "--fq-file $READS_PATH$id/original.fq";
+	$weedCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt";
+	$weeCommand .= " > $READS_PATH$id/weeded.fq";
+	my $weedErr = system($weedCommand);
+	die "ERROR: call ($weedCommand) failed with status $weedErr. Exiting.\n\n" if $weedErr;
 	
-	print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
+	print "\tSTATUS: Done removing rRNA and mitochondrial matches for $id\n" if $verbose;
     } else {
-	print "\tSTATUS: Not removing rRNA (not specified)\n" if $verbose;
+	print "\tSTATUS: Not removing rRNA or mitochondrial (not specified)\n" if $verbose;
     }
-    # ----------- done removing rRNA matches ----------
-
-    
-    # ----------- REMOVE MITOCHONDRIAL RNA MATCHES ----------
-    
-    # ----------- done removing mitochondrial RNA matches ----------
+    # ----------- done removing rRNA and mitochondrial matches ----------
 
 }
 
