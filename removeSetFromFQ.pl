@@ -18,7 +18,7 @@ use Getopt::Long;
 my ($FQ_FILE, @IDLIST_FILES, $help);
 GetOptions('help|?' => \$help,
 	   'fq-file=s' => \$FQ_FILE,
-	   'idlist-file=s' => \@IDLIST_FILE);
+	   'idlist-file=s' => \@IDLIST_FILES);
 
 &usage if $help;
 &usage unless ($FQ_FILE && $IDLIST_FILES[0]);
