@@ -113,9 +113,9 @@ foreach my $id (@ids) {
 	
 	my $weedCommand = $PERL_PREFIX;
 	$weedCommand .= "removeSetFromFQ.pl ";
-	$weedCommand .= "--fq-file $READS_PATH$id/original.fq";
-	$weedCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt";
-	$weedCommand .= " > $READS_PATH$id/weeded.fq";
+	$weedCommand .= "--fq-file $READS_PATH$id/original.fq ";
+	$weedCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
+	$weedCommand .= "> $READS_PATH$id/weeded.fq";
 	my $weedErr = system($weedCommand);
 	die "ERROR: call ($weedCommand) failed with status $weedErr. Exiting.\n\n" if $weedErr;
 	
