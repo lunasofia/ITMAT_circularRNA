@@ -120,7 +120,7 @@ while(my $line = <$spreadsheet_fh>) {
        
 	my @info = @$tissueRef;
 	
-	for(my $i = 2; $i <= $#info; $i++) {
+	for(my $i = 1; $i <= $#info; $i++) {
 	    push @tissues, $info[$i] unless ($info[$i] eq '-' || $info[$i] eq '');
 	}
 	
