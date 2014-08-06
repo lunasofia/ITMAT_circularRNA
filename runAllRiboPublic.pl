@@ -102,7 +102,7 @@ close $id_fh;
 print "STATUS: Successfully loaded ID list\n\n";
 # ---------- done getting ID list ----------
 
-
+if(0) {
 print "STATUS: Beginning match weed-out\n";
 foreach my $id (@ids) {
     
@@ -126,7 +126,7 @@ foreach my $id (@ids) {
     # ----------- done removing rRNA and mitochondrial matches ----------
 
 }
-
+}
 # ----------- EQUALIZE NUMBER OF READS -----------
 print "STATUS: Equalizing numbers of reads\n";
 
@@ -152,9 +152,10 @@ print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
 
 foreach my $id (@ids) {
     my $cutCommand = $PERL_PREFIX;
-    $cutCommand .= "randSubsetFromFQ.pl ";
+    $cutCommand .= "randSubset.pl ";
     $cutCommand .= "--fq-filename $READS_PATH$id/weeded.fq ";
-    $cutCommand .= "--n-output-entries $minNumReads";
+    $cutCommand .= "--n-output-entries $minNumReads ";
+    $cutCommand .= "--n-lines-per-entry 4 ";
     $cutCommand .= " > $READS_PATH$id/equalized.fq";
     my $cutErr = system($cutCommand);
     die "ERROR: call ($cutCommand) failed with status $cutErr. Exiting.\n\n" if $cutErr;
