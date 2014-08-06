@@ -115,7 +115,7 @@ foreach my $id (@ids) {
 	$weedCommand .= "removeSetFromFQ.pl ";
 	$weedCommand .= "--fq-file $READS_PATH$id/original.fq";
 	$weedCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt";
-	$weeCommand .= " > $READS_PATH$id/weeded.fq";
+	$weedCommand .= " > $READS_PATH$id/weeded.fq";
 	my $weedErr = system($weedCommand);
 	die "ERROR: call ($weedCommand) failed with status $weedErr. Exiting.\n\n" if $weedErr;
 	
@@ -170,7 +170,7 @@ foreach my $id (@ids) {
     my $starCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
     $starCommand .= "--fastq-file $READS_PATH$id/equalized.fq ";
     $starCommand .= "--sam-file $READS_PATH$id/$id.sam ";
-    $starCcommand .= "> $READS_PATH$id/starUnmatched.fq";
+    $starCommand .= "> $READS_PATH$id/starUnmatched.fq";
     my $starErr = system($starCommand);
     die "ERROR: call ($starCommand) failed with status $starErr. Exiting.\n\n" if $starErr;
     
@@ -271,7 +271,7 @@ die "
      This specifies the minimum number of base pairs
      that must cross an exon-exon boundary in order
      to count the read as evidence of shuffles exons
- --remove-rrna
+ --normalize-fully
      If specified, removes rRNA matches. If this is
      not specified, then no rRNA ID files must be
      specified.   
