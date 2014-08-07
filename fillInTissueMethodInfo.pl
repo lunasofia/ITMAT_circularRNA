@@ -84,10 +84,8 @@ while(my $line = <$spreadsheet_fh>) {
     }
 
     # in case column not filled in yet
-    if ($#vals == 2) {
-	push(@vals, "*");
-    }
-
+    push(@vals, "*") while ($#vals < 3);
+    
     # make sure to get rid of _1
     my $id = $vals[0];
     $id = substr($id, 0, -2) if ($id =~ /_1$/);
