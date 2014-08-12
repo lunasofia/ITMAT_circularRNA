@@ -102,7 +102,6 @@ close $id_fh;
 print "STATUS: Successfully loaded ID list\n\n";
 # ---------- done getting ID list ----------
 
-if(0) {
 print "STATUS: Beginning match weed-out\n";
 foreach my $id (@ids) {
     
@@ -126,11 +125,10 @@ foreach my $id (@ids) {
     # ----------- done removing rRNA and mitochondrial matches ----------
 
 }
-}
 # ----------- EQUALIZE NUMBER OF READS -----------
 print "STATUS: Equalizing numbers of reads\n";
-
 my $minNumReads;
+if(0) {
 foreach my $id (@ids) {
     # Count lines
     my $lineCount = 0;
@@ -147,7 +145,9 @@ foreach my $id (@ids) {
     $minNumReads = $nReads unless defined $minNumReads; # if first loop
     $minNumReads = $nReads if $nReads < $minNumReads;
 }
-
+} else {
+    $minNumReads = 7074960;
+}
 print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
 
 foreach my $id (@ids) {
