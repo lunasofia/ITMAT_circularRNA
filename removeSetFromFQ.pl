@@ -27,7 +27,7 @@ my %idlist = ();
 
 # Read list of IDs into hash
 foreach my $file (@IDLIST_FILES) {
-    open my $idlist_fh, '<', $file;
+    open my $idlist_fh, '<', $file or die "could not open file $file\n";
     while(<$idlist_fh>) {
 	chomp($_);
 	$idlist{ "\@$_" } = 1;
