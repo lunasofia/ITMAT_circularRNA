@@ -164,6 +164,7 @@ if($STAR_PATH) {
         print "\tSTATUS: successfully pre-aligned $id with STAR.\n"  if $verbose;
     }
     my $clearStarCommand = "${STAR_PATH}STAR ";
+    $clearStarCommand .= "--genomeDir $GENOME_PATH ";
     $clearStarCommand .= "--genomeLoad Remove";
     my $clearStarErr = system($clearStarCommand);
     die "ERROR: call ($clearStarCommand) failed with status $clearStarErr. Exiting.\n\n" if $clearStarErr;
@@ -173,7 +174,7 @@ if($STAR_PATH) {
     print "STATUS: not pre-aligning with STAR (not specified).\n";
 }
 # ---------- done aligning with star ----------
-
+die "DONE ALIGNING WITH STAR.\n";
 
 # ---------- NORMALIZING ALL READS (if specified) ----------
 if($BLAST_PATH) {
