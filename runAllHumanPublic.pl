@@ -174,7 +174,6 @@ if($STAR_PATH) {
     print "STATUS: not pre-aligning with STAR (not specified).\n";
 }
 # ---------- done aligning with star ----------
-die "DONE ALIGNING WITH STAR.\n";
 
 # ---------- NORMALIZING ALL READS (if specified) ----------
 if($BLAST_PATH) {
