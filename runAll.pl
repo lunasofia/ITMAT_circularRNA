@@ -2,66 +2,92 @@
 # Author: S. Luna Frank-Fischer
 # ITMAT at UPenn
 # ----------------------------------------
-# Runs the full pipeline to search for shuffled exons.
+# Runs the full pipeline to search for shuffled exons. For more
+# information, read README.txt
 # 
 # The directories must be arranged in the following structure:
 #
 # READS/
-#   |---ids.txt
-#   |---exon_info.txt
+#   |--- ids.txt
+#   |--- exon_info.txt
 #   |--- Sample_1/
-#           |--- Sample_1_forward.fq
-#           |--- Sample_1_reverse.fq
-#           |--- Sample_1.ribosomalids.txt
+#           |--- Sample_1.fq
+#           |--- Sample_1.sam (optional)
 #   |--- Sample_2/
-#           |--- Sample_2_forward.fq
-#           |--- Sample_2_reverse.fq
-#           |--- Sample_2.ribosomalids.txt
+#           |--- Sample_2.fq
+#           |--- Sample_2.sam (optional)
 #
-# Note that the ribosomal id files are only necessary if the
-# flag remove-rrna is specified.
-# More detailed specifications are in README.txt.
+#
 #
 # Necessary Flags:
-# --bwa-path <path/>
+# --bwa-path </path/>
 #     This specifies the path to BWA. If, to run
-#     BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
-#     then path should be "../stuff/bwa/bwa-0.7.9a/"
-# --exon-database <version/>
+#     BWA, you would write /path/bwa/bwa-0.7.9a/bwa
+#     then path should be "/path/bwa/bwa-0.7.9a/"
+# --exon-database </path/version/>
 #     This specifies the shuffles exon index. Note
 #     that BWA's index command should be used to
 #     generate the other files in the directory.
-#     (This file should be a FastA file.)
-# --reads-path <path/>
+#     (This file should be a FastA file.) This is
+#     the full path, for example:
+#     "/path/bwa/index/file.fa"
+# --reads-path </path/>
 #     This specifies the directory containing the
 #     ids.txt file and the files with the samples.
+#     Should be a full path, for example:
+#     "/path/reads/"
 #
 # Optional Flags:
-# --scripts-path <path/>
+# --ids-filename </path/filename>
+#     So that the script can be run simultaneously with
+#     different id sets, optionally takes in the name of
+#     the id file. If none is given, assumes ids.txt is
+#     the name of the file, and that the file is in the
+#     reads directory. If specified, this should be the
+#     full path.
+# --scripts-path </path/>
 #     This specifies the path to the file of scripts.
 #     If unspecified, assumed to be in the present
 #     directory.
-# --min-overlap (-m) <n>
+# --min-overlap <n>
 #     This specifies the minimum number of base pairs
 #     that must cross an exon-exon boundary in order
 #     to count the read as evidence of shuffles exons
-# --prealign-star (-p) <path/>
+# --prealign-star </path/>
 #     If specified, pre-aligns with STAR. The path
 #     to STAR must be specified. If, to run STAR,
 #     you would write ../stuff/star/STAR then the
 #     the path should be "../stuff/star/". The STAR
 #     directory must also contain, in index/, the
-#     name of the genome.
-# --genome-path (-g) <name>
-#     Necessary if --star-prealign is specified.
-# --thread-count (-t)
+#     name of the genome. IF this is not specified,
+#     then there must be sam files available, called
+#     ID.sam within each ID directory.
+# --genome-path </path/dir/>
+#     Necessary if --star-prealign is specified. This
+#     is the full path to the directory containing the
+#     genome information. For example:
+#     "/path/star/index/mm9/"
+# --thread-count <n>
 #     How many threads should be used (while running
-#     STAR - the rest does not yet support threads.)
-# --remove-rrna
-#     If specified, removes rRNA matches. If this is
-#     not specified, then no rRNA ID files must be
-#     specified.   
-# --verbose (-v)
+#     STAR - the rest does not support threads.) This
+#     does nothing unless STAR is specified.
+# --blast-path <path/>
+#     This specifies the path to BLAST and relevant
+#     scripts. For example, this path could be
+#     "/path/ncbi-blast-2.2.27+/" If this is not
+#     specified, then the ribosomal and mitochondrial
+#     RNAs will not be weeded out at all.
+# --ribo-reference <name>
+#     This is the first part of the name of the various
+#     files used for eliminating the ribosomal RNA. The
+#     files themselves must be in the folder specified
+#     by the blast path. This is necessary if blast-path
+#     is specified.
+# --conserve-space
+#     If specified, the program will delete intermediate
+#     files to conserve space. Even if specified, keeps
+#     the star-aligned SAM files and original fq files.
+# --verbose
 #     If specified, prints out status messages.
 
 
@@ -70,31 +96,39 @@ use warnings;
 use Getopt::Long;
 
 my ($BWA_PATH, $BWA_VERSION, $EXON_DATABASE,
-    $SCRIPTS_PATH, $MIN_OVERLAP, $STAR_PATH,
-    $READS_PATH, $GENOME_PATH, $NTHREADS,
-    $REMOVE_RRNA, $help, $verbose);
-GetOptions('help|?' => \$help,
-           'verbose' => \$verbose,
+    $SCRIPTS_PATH, $MIN_OVERLAP, $READS_PATH,
+    $IDS_FILENAME, $STAR_PATH, $GENOME_PATH, $NTHREADS,
+    $BLAST_PATH, $RIBO_REF, $CONSERVE_SPACE, $HELP, $VERBOSE);
+GetOptions('help|?' => \$HELP,
+           'verbose' => \$VERBOSE,
            'bwa-path=s' => \$BWA_PATH,
            'exon-database=s' => \$EXON_DATABASE,
            'reads-path=s' => \$READS_PATH,
            'scripts-path=s' => \$SCRIPTS_PATH,
            'min-overlap=i' => \$MIN_OVERLAP,
-           'prealign-star=s' => \$STAR_PATH,
-           'genome-path=s' => \$GENOME_PATH,
-           'thread-count=i' => \$NTHREADS,
-	   'remove-rrna' => \$REMOVE_RRNA);
+	   'ids-filename=s' => \$IDS_FILENAME,
+	   'prealign-star=s' => \$STAR_PATH,
+	   'genome-path=s' => \$GENOME_PATH,
+	   'thread-count=i' => \$NTHREADS,
+	   'blast-path=s' => \$BLAST_PATH,
+	   'ribo-reference=s' => \$RIBO_REF,
+	   'conserve-space' => \$CONSERVE_SPACE);
 
 
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
 # there.
-&usage if $help;
-&usage unless ($BWA_PATH && $READS_PATH);
+&usage("help requested!") if $HELP;
+&usage("missing required flag") unless ($BWA_PATH && $READS_PATH && $EXON_DATABASE);
 if($STAR_PATH) {
-    &usage unless $GENOME_PATH;
+    &usage("missing genome path") unless $GENOME_PATH;
     $GENOME_PATH .= "/" unless $GENOME_PATH =~ /\/$/;
     $STAR_PATH .= "/" unless $STAR_PATH =~ /\/$/;
+}
+if($BLAST_PATH) {
+    &usage("missing ribo-reference") unless $RIBO_REF;
+    # here we do NOT want the '/'
+    $BLAST_PATH = substr $BLAST_PATH, 0, -1 if $BLAST_PATH =~ /\/$/;
 }
 if($SCRIPTS_PATH) {
     $SCRIPTS_PATH .= "/" unless $SCRIPTS_PATH =~ /\/$/;
@@ -102,24 +136,21 @@ if($SCRIPTS_PATH) {
 $BWA_PATH .= "/" unless $BWA_PATH =~ /\/$/;
 $READS_PATH .= "/" unless $READS_PATH =~ /\/$/;
 
-# To be used to run commands for both forward and backward
-my @DIRECTIONS = ("forward", "reverse");
-
 # Prefix for each perl script
 my $PERL_PREFIX = "perl ";
 $PERL_PREFIX .= $SCRIPTS_PATH if $SCRIPTS_PATH;
-	
+
+# Set default ids filename unless specified
+$IDS_FILENAME = "${READS_PATH}ids.txt" unless $IDS_FILENAME;
 
 # List of IDs (populated from ids.txt)
 my @ids;
 
-
 # ----------- GET ID LIST ----------
-my $ID_FILE = $READS_PATH . "ids.txt";
-print "STATUS: Getting ID list from $ID_FILE\n";
-open my $id_fh, '<', $ID_FILE or die "ERROR: could not open id file ($ID_FILE)\n";
+print "STATUS: Getting ID list from $ID_FILENAME\n";
+open my $id_fh, '<', $ID_FILENAME or die "ERROR: could not open id file ($ID_FILENAME)\n";
 while(<$id_fh>) {
-    chomp($_);
+    chomp;
     push @ids, $_;
 }
 close $id_fh;
@@ -127,239 +158,281 @@ print "STATUS: Successfully loaded ID list\n\n";
 # ---------- done getting ID list ----------
 
 
-print "STATUS: Beginning match weed-out\n";
-foreach my $id (@ids) {
-    
-    # ----------- REMOVE rRNA MATCHES (if specified) ----------
-    if($REMOVE_RRNA) {
-	print "\tSTATUS: Removing rRNA matches for $id\n" if $verbose;
-	foreach my $direction (@DIRECTIONS) {
-	    system("mv $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_old.fq");
-	    
-	    my $command = $PERL_PREFIX;
-	    $command .= "removeSetFromFQ.pl ";
-	    $command .= "--fq-file $READS_PATH$id/${direction}_old.fq";
-	    $command .= "--idlist-file $READS_PATH$id/$id.ribosomalids.txt";
-	    $command .= " > $READS_PATH$id/${id}_${direction}.fq";
-	    my $err = system($command);
-	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	    print "\tSTATUS: removeSetFromFQ ran successfully for $direction.\n" if $verbose;
-	} 
-	print "\tSTATUS: Done removing rRNA matches for $id\n" if $verbose;
-    } else {
-	print "\tSTATUS: Not removing rRNA (not specified)\n" if $verbose;
-    }
-    # ----------- done removing rRNA matches ----------
-
-
-    # ----------- REMOVE REGULAR MATCHES (if specified) ----------
-    foreach my $direction (@DIRECTIONS) {
-	if($STAR_PATH) {
-	    print "\tSTATUS: beginning to pre-align with STAR ($id $direction).\n";
-	    
-	    my $command = "${STAR_PATH}STAR ";
-	    $command .= "--genomeDir $GENOME_PATH ";
-	    $command .= "--readFilesIn $READS_PATH$id/${id}_$direction.fq ";
-	    $command .= "--runThreadN $NTHREADS " if $NTHREADS;
-	    $command .= "--outFilterMultimapNmax 10000 ";
-	    $command .= "--outSAMunmapped Within ";
-	    $command .= "--outFilterMatchNminOverLread .75";
-	    my $err = system($command);
-	    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	    
-	    system("mv Aligned.out.sam $READS_PATH$id/");
-	    
-	    print "\tSTATUS: successfully pre-aligned $id $direction with STAR.\n"  if $verbose;
-	    
-	    my $command2 = "${PERL_PREFIX}unmatchedFromSAM.pl ";
-	    $command2 .= "--fastq-file $READS_PATH$id/${id}_$direction.fq ";
-	    $command2 .= "--sam-file $READS_PATH$id/Aligned.out.sam ";
-	    $command2 .= "> $READS_PATH$id/${direction}_weeded.fq";
-	    my $err2 = system($command2);
-	    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
-	    
-	    print "\tSTATUS: successfully removed STAR matches for $id $direction.\n" if $verbose;
-	    
-	} else {
-	    system("cp -l $READS_PATH$id/${id}_$direction.fq $READS_PATH$id/${direction}_weeded.fq");
-	}
-    }
-
-    # ----------- done removing regular matches ----------
-    
-}
-print "STATUS: Finished match weed-out\n\n";
-
-
-
-# ----------- EQUALIZE NUMBER OF READS -----------
-print "STATUS: Equalizing numbers of reads\n";
-
-# do directions separately, in case of no reverse reads
-foreach my $direction (@DIRECTIONS) {
-    my $minNumReads;
+# ---------- ALIGN WITH STAR ----------
+if($STAR_PATH) {
+    print "STATUS: beginning to pre-align with STAR.\n";
     foreach my $id (@ids) {
-	# Count lines
-	my $lineCount = 0;
-	open my $fq_fh, '<', "$READS_PATH$id/${direction}_weeded.fq" or die "ERROR\n";
-	while(<$fq_fh>) {
-	    $lineCount++;
-	}
-	close $fq_fh;
+        my $starCommand = "${STAR_PATH}STAR ";
+	$starCommand .= "--genomeLoad LoadAndKeep ";
+        $starCommand .= "--genomeDir $GENOME_PATH ";
+        $starCommand .= "--readFilesIn $READS_PATH$id/${id}.fq ";
+        $starCommand .= "--runThreadN $NTHREADS " if $NTHREADS;
+        $starCommand .= "--outSAMunmapped Within ";
+	&run($starCommand);
 	
-	# Update min if necessary
-	my $nReads = $lineCount / 4;	
-        print "\tSTATUS: $id $direction has length $lineCount and $nReads reads.\n" if $verbose;
+        system("mv Aligned.out.sam $READS_PATH$id/$id.sam");
 
-	$minNumReads = $nReads unless defined $minNumReads; # if first loop
-	$minNumReads = $nReads if $nReads < $minNumReads;
+        print "\tSTATUS: successfully pre-aligned $id with STAR.\n"  if $verbose;
     }
-    
-    print "\tSTATUS: Minimum number of reads for $direction is $minNumReads\n" if $verbose;
 
+    # clear genome from memory
+    my $clearStarCommand = "${STAR_PATH}STAR ";
+    $clearStarCommand .= "--genomeDir $GENOME_PATH ";
+    $clearStarCommand .= "--genomeLoad Remove";
+    &run($clearStarCommand);
+    print "\tSTATUS: done removing genome from shared memory.\n" if $verbose;
+    print "STATUS: done aligning with star.\n";
+} else {
+    print "STATUS: not pre-aligning with STAR (not specified).\n";
+}
+# ---------- done aligning with star ----------
+
+
+# ---------- NORMALIZING ALL READS (if specified) ----------
+if($BLAST_PATH) {
+    print "STATUS: normalizing reads.\n";
     foreach my $id (@ids) {
-	my $command = $PERL_PREFIX;
-	$command .= "randSubsetFromFQ.pl ";
-	$command .= "--fq-filename $READS_PATH$id/${direction}_weeded.fq ";
-	$command .= "--n-output-entries $minNumReads";
-	$command .= " > $READS_PATH$id/${direction}_equalized.fq";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	print "\tSTATUS: Equalized $id $direction.\n" if $verbose;
+    
+	# --- first, use BLAST to find ribosomal IDs ---
+	print "\tSTATUS: finding ribosomal IDs with BLAST for $id.\n" if $verbose;
+	my $blastCommand = "perl $BLAST_PATH/runblast.pl ";
+	my $readsPathTemp = substr $READS_PATH, 0, -1;
+	$blastCommand .= "$id $readsPathTemp $id.sam ";
+	$blastCommand .= "$BLAST_PATH $BLAST_PATH/$RIBO_REF";
+	&run($blastCommand);
+
+	system("rm $READS_PATH$id/blast.out.1") if $CONSERVE_SPACE;
+	system("rm $READS_PATH$id/temp.1") if $CONSERVE_SPACE;
+	print "\tSTATUS: removed blast-generated temporary files.\n" if $verbose;
+
+	# --- then, get mitochondrial IDs from SAM file ---
+	print "\tSTATUS: finding mitochondrial IDs for $id.\n" if $verbose;
+	my $mitoCommand = "$PERL_PREFIX";
+	$mitoCommand .= "getMitochondrialIDs.pl ";
+	$mitoCommand .= "$READS_PATH$id/$id.sam ";
+	$mitoCommand .= "> $READS_PATH$id/mitochondrialIDs.txt";
+	&run($mitoCommand);
+
+	# --- generate file with ribo & mito ids removed ---
+	print "\tSTATUS: removing ribosomal and mitochondrial reads.\n" if $verbose;
+	system("cat $READS_PATH$id/mitochondrialIDs.txt $READS_PATH$id/$id.ribosomalids.txt > $READS_PATH$id/${id}_removeIDs.txt");
+	my $normCommand = "$PERL_PREFIX";
+	$normCommand .= "removeSetFromFQ.pl ";
+	$normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
+	$normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
+	$normCommand .= "> $READS_PATH$id/norm.fq";
+	&run($normCommand);
+
     }
+    print "STATUS: done normalizing reads.\n\n";
+} else {
+    print "STATUS: not normalizing reads (blast path not specified).\n\n";
+    foreach my $id (@ids) {
+	system("cp -l $READS_PATH$id/$id.fq $READS_PATH$id/norm.fq");
+    }
+}
+# ---------- done normalization ----------
+
+
+# ---------- EQUALIZING NUMBER OF READS ----------
+print "STATUS: Equalizing numbers of reads\n";
+my $minNumReads;
+foreach my $id (@ids) {
+    # Count lines                                                                                                                                                               
+    my $lineCount = 0;
+    open my $fq_fh, '<', "$READS_PATH$id/norm.fq" or die "ERROR\n";
+    while(<$fq_fh>) {
+	$lineCount++;
+    }
+    close $fq_fh;
+    
+    # Update min if necessary                                                                                                                                                  
+    my $nReads = $lineCount / 4;
+    print "\tSTATUS: $id has length $lineCount and $nReads reads.\n" if $verbose;
+    $minNumReads = $nReads unless defined $minNumReads; # if first loop                                                                                                        
+    $minNumReads = $nReads if $nReads < $minNumReads;
+}
+
+print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
+
+foreach my $id (@ids) {
+    my $cutCommand = $PERL_PREFIX;
+    $cutCommand .= "randSubset.pl ";
+    $cutCommand .= "--fq-filename $READS_PATH$id/norm.fq ";
+    $cutCommand .= "--n-output-entries $minNumReads ";
+    $cutCommand .= "--n-lines-per-entry 4 ";
+    $cutCommand .= " > $READS_PATH$id/equalized.fq";
+    &run($cutCommand);
+    print "\tSTATUS: Equalized $id.\n" if $verbose;
+    
+    system("rm $READS_PATH$id/norm.fq") if $CONSERVE_SPACE;
 }
 print "STATUS: Done equalizing number of reads\n\n";
-# ----------- done equalizing number of reads -----------
+# ---------- done equalizing ----------
 
 
 foreach my $id (@ids) {
-    # ----------- ALIGN TO SHUFFLED DATABASE -----------
-    print "STATUS: Aligning to shuffled exon database.\n";
-    foreach my $direction (@DIRECTIONS) {
-	my $command = $BWA_PATH;
-	$command .= "bwa aln $EXON_DATABASE ";
-	$command .= "$READS_PATH$id/${direction}_equalized.fq";
-	$command .= " > $READS_PATH$id/${direction}_reads.sai";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	
-	my $command2 = $BWA_PATH;
-	$command2 .= "bwa samse $EXON_DATABASE ";
-	$command2 .= "$READS_PATH$id/${direction}_reads.sai ";
-	$command2 .= "$READS_PATH$id/${direction}_equalized.fq ";
-	$command2 .= "> $READS_PATH$id/${direction}_aligned.sam";
-	my $err2 = system($command2);
-	die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
+    print "STATUS: working on id $id.\n";
 
-	print "\tSTATUS: Aligned $id $direction.\n" if $verbose;
-
-    }
-    print "STATUS: Done aligning to shuffled exon database.\n";
-    # ----------- done aligning to shuffled database -----------
-
-
-    # ----------- SELECT EXON-BOUNDARY CROSSING READS ----------
-    print "STATUS: Selecting exon-boundary crossing reads for $id.\n";
-    foreach my $direction (@DIRECTIONS) {
-	my $command = $PERL_PREFIX;
-	$command .= "exonBoundaryCrossFilter.pl ";
-	$command .= "--exon-info-file ${READS_PATH}exon_info.txt ";
-	$command .= "--sam-file $READS_PATH$id/${direction}_aligned.sam ";
-	$command .= "--min-overlap $MIN_OVERLAP " if $MIN_OVERLAP;
-	$command .= "> $READS_PATH$id/${direction}_finalmatch.sam";
-	my $err = system($command);
-	die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-	print "\tSTATUS: exonBoundaryCrossFilter ran successfully for $direction\n" if $verbose;
-	
-    }
-    # Combine forward and reverse
-    my $command = "cat $READS_PATH$id/forward_finalmatch.sam ";
-    $command .= "$READS_PATH$id/reverse_finalmatch.sam ";
-    $command .= "> $READS_PATH$id/together_finalmatch.sam";
-    my $err = system($command);
-    die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
-    print "\tSTATUS: combined forward and reverse\n" if $verbose;
+    # ----------- REMOVE REGULAR MATCHES ----------
+    print "STATUS: Removing STAR-aligned matches ($id).\n";
     
-    print "STATUS: Done selectiong exon-boundary crossing reads for $id.\n\n";
+    my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
+    $unmatchedCommand .= "--fastq-file $READS_PATH$id/equalized.fq ";
+    $unmatchedCommand .= "--sam-file $READS_PATH$id/$id.sam ";
+    $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
+    &run($unmatchedCommand);
+
+    print "\tSTATUS: successfully removed STAR matches ($id).\n" if $verbose;
+    # ----------- done removing regular matches ----------
+
+
+    # ----------- ALIGN TO SHUFFLED DATABASE -----------
+    print "STATUS: Aligning to shuffled exon database ($id).\n";
+    my $bwaCommand = $BWA_PATH;
+    $bwaCommand .= "bwa aln $EXON_DATABASE ";
+    $bwaCommand .= "$READS_PATH$id/weeded.fq";
+    $bwaCommand .= " > $READS_PATH$id/reads.sai";
+    &run($bwaCommand);
+
+    my $bwaCommand2 = $BWA_PATH;
+    $bwaCommand2 .= "bwa samse $EXON_DATABASE ";
+    $bwaCommand2 .= "$READS_PATH$id/reads.sai ";
+    $bwaCommand2 .= "$READS_PATH$id/weeded.fq ";
+    $bwaCommand2 .= "> $READS_PATH$id/shufflealigned.sam";
+    &run($bwaCommand2);
+    
+    print "STATUS: Done aligning to shuffled exon database ($id).\n";
+    # ----------- done aligning to shuffled database -----------
+    
+    
+    # ----------- SELECT EXON-BOUNDARY CROSSING READS ----------
+    print "STATUS: Selecting exon-boundary crossing reads ($id).\n";
+    my $boundaryCommand = $PERL_PREFIX;
+    $boundaryCommand .= "exonBoundaryCrossFilter.pl ";
+    $boundaryCommand .= "--exon-info-file ${READS_PATH}exon_info.txt ";
+    $boundaryCommand .= "--sam-file $READS_PATH$id/shufflealigned.sam ";
+    $boundaryCommand .= "--min-overlap $MIN_OVERLAP " if $MIN_OVERLAP;
+    $boundaryCommand .= "> $READS_PATH$id/finalmatch.sam";
+    &run($boundaryCommand);
+    print "\tSTATUS: exonBoundaryCrossFilter ran successfully\n" if $verbose;
+    
+    print "STATUS: Done selectiong exon-boundary crossing reads ($id).\n\n";
     # ----------- done selecting for boundary-crossing ----------
 
 
     # ----------- CONVERT TO FREQUENCY COLUMN ----------
-    print "STATUS: Converting to frequency column.\n";
-    my $command2 = $PERL_PREFIX;
-    $command2 .= "samToSpreadsheetCol.pl ";
-    $command2 .= "--sam-filename $READS_PATH$id/together_finalmatch.sam ";
-    $command2 .= "--column-title $id ";
-    $command2 .= "> $READS_PATH$id/frequencies.txt";
-    my $err2 = system($command2);
-    die "ERROR: call ($command2) failed with status $err2. Exiting.\n\n" if $err2;
+    print "STATUS: Converting to frequency column ($id).\n";
+    my $freqCommand = $PERL_PREFIX;
+    $freqCommand .= "samToSpreadsheetCol.pl ";
+    $freqCommand .= "--sam-filename $READS_PATH$id/finalmatch.sam ";
+    $freqCommand .= "--column-title $id ";
+    $freqCommand .= "> $READS_PATH$id/frequencies.txt";
+    &run($freqCommand);
     print "\tSTATUS: samToSpreadsheetCol ran successfully.\n" if $verbose;
-    print "STATUS: Done converting to frequency column.\n\n";
+    print "STATUS: Done converting to frequency column ($id).\n\n";
     # ----------- done converting to column ----------
 }
 
+print "STATUS: Finished ID-wise processing!\n\n";
 
 # ---------- COMBINE INTO SINGLE FINAL SPREADSHEET ----------
 print "STATUS: Combining into single final spreadsheet.\n";
-my $command = $PERL_PREFIX;
-$command .= "combineColumns.pl ";
+my $finalCommand = $PERL_PREFIX;
+$finalCommand .= "combineColumns.pl ";
 foreach my $id (@ids) {
-    $command .= "$READS_PATH$id/frequencies.txt ";
+    $finalCommand .= "$READS_PATH$id/frequencies.txt ";
 }
-$command .= "> $READS_PATH/finalspreadsheet.txt";
+$finalCommand .= "> $READS_PATH/finalspreadsheet.txt";
 
-my $err = system($command);
-die "ERROR: call ($command) failed with status $err. Exiting.\n\n" if $err;
+&run($finalCommand)
 print "\tSTATUS: combineColumns ran successfully.\n" if $verbose;
 print "STATUS: Done combining.\n\n";
 # ---------- done combining into spreadsheet ----------
 
 
+####################################################################
+
+# Given a command, runs that command and fails with an appropriate error message if necessary.
+sub run {
+    my $err = system($_[0]);
+    die "ERROR: call ($_[0]) failed with status $err. Exiting.\n\n" if $err;
+}
+
+
 sub usage {
 die "
- See README.txt for more detailed specifications.
+ Reason for usage message: $_[0]
 
  Necessary Flags:
- --bwa-path <path/>
+ --bwa-path </path/>
      This specifies the path to BWA. If, to run
-     BWA, you would write ../stuff/bwa/bwa-0.7.9a/bwa
-     then path should be \"../stuff/bwa/bwa-0.7.9a/\"
- --exon-database <version/>
+     BWA, you would write /path/bwa/bwa-0.7.9a/bwa
+     then path should be \"/path/bwa/bwa-0.7.9a/\"
+ --exon-database </path/version/>
      This specifies the shuffles exon index. Note
      that BWA's index command should be used to
      generate the other files in the directory.
-     (This file should be a fasta file.)
- --reads-path <path/>
+     (This file should be a FastA file.) This is
+     the full path, for example:
+     \"/path/bwa/index/file.fa\"
+ --reads-path </path/>
      This specifies the directory containing the
      ids.txt file and the files with the samples.
-     
+     Should be a full path, for example:
+      \"/path/reads/\"
+
  Optional Flags:
- --scripts-path <path/>
+ --ids-filename </path/filename>
+     So that the script can be run simultaneously with
+     different id sets, optionally takes in the name of
+     the id file. If none is given, assumes ids.txt is
+     the name of the file, and that the file is in the
+     reads directory. If specified, this should be the
+     full path.
+ --scripts-path </path/>
      This specifies the path to the file of scripts.
      If unspecified, assumed to be in the present
      directory.
- --min-overlap (-m) <n>
+ --min-overlap <n>
      This specifies the minimum number of base pairs
      that must cross an exon-exon boundary in order
      to count the read as evidence of shuffles exons
- --prealign-star (-p) <path/>
+ --prealign-star </path/>
      If specified, pre-aligns with STAR. The path
      to STAR must be specified. If, to run STAR,
      you would write ../stuff/star/STAR then the
      the path should be \"../stuff/star/\". The STAR
      directory must also contain, in index/, the
-     name of the genome.
- --genome-path (-g) <name>
-     Necessary if --star-prealign is specified.
- --thread-count (-t)
+     name of the genome. IF this is not specified,
+     then there must be sam files available, called
+     ID.sam within each ID directory.
+ --genome-path </path/dir/>
+     Necessary if --star-prealign is specified. This
+     is the full path to the directory containing the
+     genome information. For example:
+     \"/path/star/index/mm9/\"
+ --thread-count <n>
      How many threads should be used (while running
-     STAR - the rest does not yet support threads.)
- --remove-rrna
-     If specified, removes rRNA matches. If this is
-     not specified, then no rRNA ID files must be
-     specified.   
- --verbose (-v)
+     STAR - the rest does not support threads.) This
+     does nothing unless STAR is specified.
+ --blast-path <path/>
+     This specifies the path to BLAST and relevant
+     scripts. For example, this path could be
+     \"/path/ncbi-blast-2.2.27+/\" If this is not
+     specified, then the ribosomal and mitochondrial
+     RNAs will not be weeded out at all.
+ --ribo-reference <name>
+     This is the first part of the name of the various
+     files used for eliminating the ribosomal RNA. The
+     files themselves must be in the folder specified
+     by the blast path. This is necessary if blast-path
+     is specified.
+ --conserve-space
+     If specified, the program will delete intermediate
+     files to conserve space. Even if specified, keeps
+     the star-aligned SAM files and original fq files.
+ --verbose
      If specified, prints out status messages.
-
 "
 }
