@@ -40,7 +40,7 @@
 #     So that the script can be run simultaneously with
 #     different id sets, optionally takes in the name of
 #     the id file. If none is given, assumes ids.txt is
-#     the name of the file.
+#     the name of the file. (This is NOT the full path.)
 # --scripts-path <path/>
 #     This specifies the path to the file of scripts.
 #     If unspecified, assumed to be in the present
@@ -188,6 +188,8 @@ if($BLAST_PATH) {
 	$blastCommand .= "$BLAST_PATH $BLAST_PATH/$RIBO_REF";
 	my $blastErr = system($blastCommand);
 	die "ERROR: call ($blastCommand) failed with status $blastErr. Exiting.\n\n" if $blastErr;
+	system("rm $READS_PATH$id/blast.out.1"); # otherwise this takes up too much space
+	system("rm $READS_PATH$id/temp.1");
 
 	# --- then, get mitochondrial IDs from SAM file ---
 	print "\tSTATUS: finding mitochondrial IDs for $id.\n" if $verbose;
@@ -202,7 +204,7 @@ if($BLAST_PATH) {
 	print "\tSTATUS: removing ribosomal and mitochondrial reads.\n" if $verbose;
 	system("cat $READS_PATH$id/mitochondrialIDs.txt $READS_PATH$id/$id.ribosomalids.txt > $READS_PATH$id/${id}_removeIDs.txt");
 	my $normCommand = "$PERL_PREFIX";
-	$normCommand .= "removeSetFromFQ ";
+	$normCommand .= "removeSetFromFQ.pl ";
 	$normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
 	$normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
 	$normCommand .= "> $READS_PATH$id/norm.fq";
@@ -369,7 +371,7 @@ die "
      So that the script can be run simultaneously with
      different id sets, optionally takes in the name of
      the id file. If none is given, assumes ids.txt is
-     the name of the file.
+     the name of the file. (This is NOT the full path.)
  --scripts-path <path/>
      This specifies the path to the file of scripts.
      If unspecified, assumed to be in the present
