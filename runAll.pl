@@ -189,7 +189,7 @@ if($STAR_PATH) {
 # ---------- done aligning with star ----------
 
 
-# ---------- NORMALIZING ALL READS (if specified) ----------
+# ---------- NORMALIZING ALL READS ----------
 print "STATUS: normalizing reads.\n";
 foreach my $id (@ids) {
     if($BLAST_PATH) {
