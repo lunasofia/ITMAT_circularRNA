@@ -13,10 +13,11 @@
 #   |--- Sample_1/
 #           |--- Sample_1.fq
 #           |--- Sample_1.sam (optional)
+#           |--- Sample_1_removeIDs.txt (optional)
 #   |--- Sample_2/
 #           |--- Sample_2.fq
 #           |--- Sample_2.sam (optional)
-#
+#           |--- Sample_2_removeIDs.txt (optional)
 #
 #
 # Necessary Flags:
@@ -147,8 +148,8 @@ $IDS_FILENAME = "${READS_PATH}ids.txt" unless $IDS_FILENAME;
 my @ids;
 
 # ----------- GET ID LIST ----------
-print "STATUS: Getting ID list from $ID_FILENAME\n";
-open my $id_fh, '<', $ID_FILENAME or die "ERROR: could not open id file ($ID_FILENAME)\n";
+print "STATUS: Getting ID list from $IDS_FILENAME\n";
+open my $id_fh, '<', $IDS_FILENAME or die "ERROR: could not open id file ($IDS_FILENAME)\n";
 while(<$id_fh>) {
     chomp;
     push @ids, $_;
@@ -172,7 +173,7 @@ if($STAR_PATH) {
 	
         system("mv Aligned.out.sam $READS_PATH$id/$id.sam");
 
-        print "\tSTATUS: successfully pre-aligned $id with STAR.\n"  if $verbose;
+        print "\tSTATUS: successfully pre-aligned $id with STAR.\n"  if $VERBOSE;
     }
 
     # clear genome from memory
@@ -180,33 +181,33 @@ if($STAR_PATH) {
     $clearStarCommand .= "--genomeDir $GENOME_PATH ";
     $clearStarCommand .= "--genomeLoad Remove";
     &run($clearStarCommand);
-    print "\tSTATUS: done removing genome from shared memory.\n" if $verbose;
-    print "STATUS: done aligning with star.\n";
+    print "\tSTATUS: done removing genome from shared memory.\n" if $VERBOSE;
+    print "STATUS: done aligning with star.\n\n";
 } else {
-    print "STATUS: not pre-aligning with STAR (not specified).\n";
+    print "STATUS: not pre-aligning with STAR (not specified).\n\n";
 }
 # ---------- done aligning with star ----------
 
 
 # ---------- NORMALIZING ALL READS (if specified) ----------
-if($BLAST_PATH) {
-    print "STATUS: normalizing reads.\n";
-    foreach my $id (@ids) {
+print "STATUS: normalizing reads.\n";
+foreach my $id (@ids) {
+    if($BLAST_PATH) {
     
 	# --- first, use BLAST to find ribosomal IDs ---
-	print "\tSTATUS: finding ribosomal IDs with BLAST for $id.\n" if $verbose;
+	print "\tSTATUS: finding ribosomal IDs with BLAST for $id.\n" if $VERBOSE;
 	my $blastCommand = "perl $BLAST_PATH/runblast.pl ";
 	my $readsPathTemp = substr $READS_PATH, 0, -1;
 	$blastCommand .= "$id $readsPathTemp $id.sam ";
 	$blastCommand .= "$BLAST_PATH $BLAST_PATH/$RIBO_REF";
 	&run($blastCommand);
 
+	print "\tSTATUS: removing blast-generated temporary files.\n" if $VERBOSE;
 	system("rm $READS_PATH$id/blast.out.1") if $CONSERVE_SPACE;
 	system("rm $READS_PATH$id/temp.1") if $CONSERVE_SPACE;
-	print "\tSTATUS: removed blast-generated temporary files.\n" if $verbose;
 
 	# --- then, get mitochondrial IDs from SAM file ---
-	print "\tSTATUS: finding mitochondrial IDs for $id.\n" if $verbose;
+	print "\tSTATUS: finding mitochondrial IDs for $id.\n" if $VERBOSE;
 	my $mitoCommand = "$PERL_PREFIX";
 	$mitoCommand .= "getMitochondrialIDs.pl ";
 	$mitoCommand .= "$READS_PATH$id/$id.sam ";
@@ -214,23 +215,21 @@ if($BLAST_PATH) {
 	&run($mitoCommand);
 
 	# --- generate file with ribo & mito ids removed ---
-	print "\tSTATUS: removing ribosomal and mitochondrial reads.\n" if $verbose;
+	print "\tSTATUS: removing ribosomal and mitochondrial reads.\n" if $VERBOSE;
 	system("cat $READS_PATH$id/mitochondrialIDs.txt $READS_PATH$id/$id.ribosomalids.txt > $READS_PATH$id/${id}_removeIDs.txt");
-	my $normCommand = "$PERL_PREFIX";
-	$normCommand .= "removeSetFromFQ.pl ";
-	$normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
-	$normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
-	$normCommand .= "> $READS_PATH$id/norm.fq";
-	&run($normCommand);
-
     }
-    print "STATUS: done normalizing reads.\n\n";
-} else {
-    print "STATUS: not normalizing reads (blast path not specified).\n\n";
-    foreach my $id (@ids) {
-	system("cp -l $READS_PATH$id/$id.fq $READS_PATH$id/norm.fq");
-    }
+    
+    # --- remove those IDs ---
+    my $normCommand = "$PERL_PREFIX";
+    $normCommand .= "removeSetFromFQ.pl ";
+    $normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
+    $normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
+    $normCommand .= "> $READS_PATH$id/norm.fq";
+    &run($normCommand);
+    print "\tSTATUS: all unwanted IDs removed.\n" if $VERBOSE; 
 }
+print "STATUS: done normalizing reads.\n\n";
+    
 # ---------- done normalization ----------
 
 
@@ -238,7 +237,7 @@ if($BLAST_PATH) {
 print "STATUS: Equalizing numbers of reads\n";
 my $minNumReads;
 foreach my $id (@ids) {
-    # Count lines                                                                                                                                                               
+    # count number of lines
     my $lineCount = 0;
     open my $fq_fh, '<', "$READS_PATH$id/norm.fq" or die "ERROR\n";
     while(<$fq_fh>) {
@@ -246,14 +245,14 @@ foreach my $id (@ids) {
     }
     close $fq_fh;
     
-    # Update min if necessary                                                                                                                                                  
+    # update minimum if necessary
     my $nReads = $lineCount / 4;
-    print "\tSTATUS: $id has length $lineCount and $nReads reads.\n" if $verbose;
-    $minNumReads = $nReads unless defined $minNumReads; # if first loop                                                                                                        
+    print "\tSTATUS: $id has length $lineCount and $nReads reads.\n" if $VERBOSE;
+    $minNumReads = $nReads unless defined $minNumReads; # if first loop
     $minNumReads = $nReads if $nReads < $minNumReads;
 }
 
-print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
+print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $VERBOSE;
 
 foreach my $id (@ids) {
     my $cutCommand = $PERL_PREFIX;
@@ -263,7 +262,7 @@ foreach my $id (@ids) {
     $cutCommand .= "--n-lines-per-entry 4 ";
     $cutCommand .= " > $READS_PATH$id/equalized.fq";
     &run($cutCommand);
-    print "\tSTATUS: Equalized $id.\n" if $verbose;
+    print "\tSTATUS: Equalized $id.\n" if $VERBOSE;
     
     system("rm $READS_PATH$id/norm.fq") if $CONSERVE_SPACE;
 }
@@ -272,10 +271,10 @@ print "STATUS: Done equalizing number of reads\n\n";
 
 
 foreach my $id (@ids) {
-    print "STATUS: working on id $id.\n";
+    print "STATUS: working on aligning to scrambled database (id: $id).\n";
 
     # ----------- REMOVE REGULAR MATCHES ----------
-    print "STATUS: Removing STAR-aligned matches ($id).\n";
+    print "\tSTATUS: Removing STAR-aligned matches ($id).\n" if $VERBOSE;
     
     my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
     $unmatchedCommand .= "--fastq-file $READS_PATH$id/equalized.fq ";
@@ -283,12 +282,12 @@ foreach my $id (@ids) {
     $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
     &run($unmatchedCommand);
 
-    print "\tSTATUS: successfully removed STAR matches ($id).\n" if $verbose;
+    print "\tSTATUS: successfully removed STAR matches ($id).\n" if $VERBOSE;
     # ----------- done removing regular matches ----------
 
 
     # ----------- ALIGN TO SHUFFLED DATABASE -----------
-    print "STATUS: Aligning to shuffled exon database ($id).\n";
+    print "\tSTATUS: Aligning to shuffled exon database ($id).\n" if $VERBOSE;
     my $bwaCommand = $BWA_PATH;
     $bwaCommand .= "bwa aln $EXON_DATABASE ";
     $bwaCommand .= "$READS_PATH$id/weeded.fq";
@@ -302,12 +301,12 @@ foreach my $id (@ids) {
     $bwaCommand2 .= "> $READS_PATH$id/shufflealigned.sam";
     &run($bwaCommand2);
     
-    print "STATUS: Done aligning to shuffled exon database ($id).\n";
+    print "\tSTATUS: Done aligning to shuffled exon database ($id).\n" if $VERBOSE;
     # ----------- done aligning to shuffled database -----------
     
     
     # ----------- SELECT EXON-BOUNDARY CROSSING READS ----------
-    print "STATUS: Selecting exon-boundary crossing reads ($id).\n";
+    print "\tSTATUS: Selecting exon-boundary crossing reads ($id).\n" if $VERBOSE;
     my $boundaryCommand = $PERL_PREFIX;
     $boundaryCommand .= "exonBoundaryCrossFilter.pl ";
     $boundaryCommand .= "--exon-info-file ${READS_PATH}exon_info.txt ";
@@ -315,29 +314,27 @@ foreach my $id (@ids) {
     $boundaryCommand .= "--min-overlap $MIN_OVERLAP " if $MIN_OVERLAP;
     $boundaryCommand .= "> $READS_PATH$id/finalmatch.sam";
     &run($boundaryCommand);
-    print "\tSTATUS: exonBoundaryCrossFilter ran successfully\n" if $verbose;
     
-    print "STATUS: Done selectiong exon-boundary crossing reads ($id).\n\n";
+    print "\tSTATUS: Done selectiong exon-boundary crossing reads ($id).\n" if $VERBOSE;
     # ----------- done selecting for boundary-crossing ----------
 
 
     # ----------- CONVERT TO FREQUENCY COLUMN ----------
-    print "STATUS: Converting to frequency column ($id).\n";
+    print "\tSTATUS: Converting to frequency column ($id).\n" if $VERBOSE;
     my $freqCommand = $PERL_PREFIX;
     $freqCommand .= "samToSpreadsheetCol.pl ";
     $freqCommand .= "--sam-filename $READS_PATH$id/finalmatch.sam ";
     $freqCommand .= "--column-title $id ";
     $freqCommand .= "> $READS_PATH$id/frequencies.txt";
     &run($freqCommand);
-    print "\tSTATUS: samToSpreadsheetCol ran successfully.\n" if $verbose;
-    print "STATUS: Done converting to frequency column ($id).\n\n";
+    print "\tSTATUS: Done converting to frequency column ($id).\n" if $VERBOSE;
     # ----------- done converting to column ----------
 }
-
 print "STATUS: Finished ID-wise processing!\n\n";
 
+
 # ---------- COMBINE INTO SINGLE FINAL SPREADSHEET ----------
-print "STATUS: Combining into single final spreadsheet.\n";
+print "STATUS: Combining into single final spreadsheet.\n\n";
 my $finalCommand = $PERL_PREFIX;
 $finalCommand .= "combineColumns.pl ";
 foreach my $id (@ids) {
@@ -345,8 +342,7 @@ foreach my $id (@ids) {
 }
 $finalCommand .= "> $READS_PATH/finalspreadsheet.txt";
 
-&run($finalCommand)
-print "\tSTATUS: combineColumns ran successfully.\n" if $verbose;
+&run($finalCommand);
 print "STATUS: Done combining.\n\n";
 # ---------- done combining into spreadsheet ----------
 
@@ -434,5 +430,6 @@ die "
      the star-aligned SAM files and original fq files.
  --verbose
      If specified, prints out status messages.
+
 "
 }
