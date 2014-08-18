@@ -119,7 +119,7 @@ GetOptions('help|?' => \$HELP,
 # Make sure arguments were entered correctly. Also,
 # add "/" to end of directory names if not already
 # there.
-&usage("help requested!") if $HELP;
+&usageHelp if $HELP;
 &usage("missing required flag") unless ($BWA_PATH && $READS_PATH && $EXON_DATABASE);
 if($STAR_PATH) {
     &usage("missing genome path") unless $GENOME_PATH;
@@ -356,10 +356,36 @@ sub run {
 }
 
 
+
+
 sub usage {
 die "
  Reason for usage message: $_[0]
 
+ For more information, use flag --help.
+
+ Necessary Flags:
+ --bwa-path </path/>
+ --exon-database </path/version/>
+ --reads-path </path/>
+
+ Optional Flags:
+ --ids-filename </path/filename>
+ --scripts-path </path/>
+ --min-overlap <n>
+ --prealign-star </path/>
+ --genome-path </path/dir/> (if prealign-star specified)
+ --thread-count <n>
+ --blast-path <path/>
+ --ribo-reference <name> (if blast-path specified)
+ --conserve-space
+ --verbose
+
+"
+}
+
+sub usageHelp {
+die "
  Necessary Flags:
  --bwa-path </path/>
      This specifies the path to BWA. If, to run

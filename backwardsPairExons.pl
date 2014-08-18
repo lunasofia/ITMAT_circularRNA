@@ -18,6 +18,9 @@
 # Output format:
 # >GENEA.1-2-1
 # GTGGCCATCAAGTCCATCAGGAAAGACAAAATCAAAGATGAGCAGGATCTGCGCGGGGCTTTCTAGCGTGCTCGGG
+#
+# Note that the input and output are both fasta, but
+# with additional specifications.
 
 use strict;
 

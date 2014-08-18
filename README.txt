@@ -7,8 +7,17 @@ This pipeline searches for evidence of scrambled exons in RNA sequencing
 data.
 
 ---------- PREPARING TO RUN THE PIPELINE ----------
-First, if a shuffled exon database has not yet been created, run the
-necessary scripts to build a shuffled exon database.
+First, if a shuffled exon database has not yet been created, run
+backwardsPairExons.pl to build the fasta-format database. Then,
+run BWA's scripts to create the other files necessary for BWA to
+run.
+
+If you need to perform the normalization step, you must download
+BLAST. You also need the ribosomal database for the organism
+you are looking at. Finally, you need runblast.pl and parseblastout.pl
+from https://github.com/itmat/Normalization/tree/master/norm_scripts.
+These should both be inside the BLAST directory (which contains
+sub-directories like bin/ and doc/).
 
 You also must have BWA, STAR, and BLAST.
 
@@ -33,8 +42,9 @@ will be used instead of generating pre-alignment with STAR.
 
 Similarly, the removeIDs file (which has a list of IDs to remove from the
 fastq file, one ID per line) is only necessary if the general normalization
-pipeline is not specified (by including a path for BLAST). If BLAST is
-not specified, then mitochondrial IDs will also NOT be removed.
+pipeline is not specified (by including a path for BLAST). Note that if no
+normalization is desired, this file could be empty. However, the files will
+still be normalized for size.
 
 ---------- RUNNING THE PIPELINE ----------
  Necessary Flags:
