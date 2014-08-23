@@ -175,6 +175,7 @@ if($STAR_PATH) {
 }
 # ---------- done aligning with star ----------
 
+if(0) {
 # ---------- NORMALIZING ALL READS (if specified) ----------
 if($BLAST_PATH) {
     print "STATUS: normalizing reads.\n";
@@ -203,21 +204,24 @@ if($BLAST_PATH) {
 	# --- generate file with ribo & mito ids removed ---
 	print "\tSTATUS: removing ribosomal and mitochondrial reads.\n" if $verbose;
 	system("cat $READS_PATH$id/mitochondrialIDs.txt $READS_PATH$id/$id.ribosomalids.txt > $READS_PATH$id/${id}_removeIDs.txt");
-	my $normCommand = "$PERL_PREFIX";
-	$normCommand .= "removeSetFromFQ.pl ";
-	$normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
-	$normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
-	$normCommand .= "> $READS_PATH$id/norm.fq";
-	my $normErr = system($normCommand);
-	die "ERROR: call ($normCommand) failed with status $normErr. Exiting\n\n" if $normErr;
-
     }
-    print "STATUS: done normalizing reads.\n\n";
 } else {
-    print "STATUS: not normalizing reads (blast path not specified).\n\n";
-    foreach my $id (@ids) {
-	system("mv $READS_PATH$id/$id.fq $READS_PATH$id/norm.fq");
-    }
+    print "STATUS: using pre-supplied remove IDs file.\n\n";
+}
+
+foreach my $id (@ids) {
+    my $normCommand = "$PERL_PREFIX";
+    $normCommand .= "removeSetFromFQ.pl ";
+    $normCommand .= "--fq-file $READS_PATH$id/$id.fq ";
+    $normCommand .= "--idlist-file $READS_PATH$id/${id}_removeIDs.txt ";
+    $normCommand .= "> $READS_PATH$id/norm.fq";
+    my $normErr = system($normCommand);
+    die "ERROR: call ($normCommand) failed with status $normErr. Exiting\n\n" if $normErr;    
+}
+
+print "STATUS: done normalizing reads.\n\n";
+} else {
+    print "STATUS: doing NO NORMALIZATION, special case.\n\n";
 }
 # ---------- done normalization ----------
 
@@ -225,10 +229,12 @@ if($BLAST_PATH) {
 # ---------- EQUALIZING NUMBER OF READS ----------
 print "STATUS: Equalizing numbers of reads\n";
 my $minNumReads;
+if(0) {
 foreach my $id (@ids) {
     # Count lines                                                                                                                                                               
     my $lineCount = 0;
-    open my $fq_fh, '<', "$READS_PATH$id/norm.fq" or die "ERROR\n";
+    system ("mv $READS_PATH$id/equalized.fq $READS_PATH$id/norm.fq"); # JUST ADDED THIS
+    open my $fq_fh, '<', "$READS_PATH$id/norm.fq" or die "could not open $READS_PATH$id/norm.fq\n";
     while(<$fq_fh>) {
 	$lineCount++;
     }
@@ -240,8 +246,11 @@ foreach my $id (@ids) {
     $minNumReads = $nReads unless defined $minNumReads; # if first loop                                                                                                        
     $minNumReads = $nReads if $nReads < $minNumReads;
 }
-
+} else {
+    $minNumReads = 764081;
+}
 print "\tSTATUS: Minimum number of reads is $minNumReads\n" if $verbose;
+
 
 foreach my $id (@ids) {
     my $cutCommand = $PERL_PREFIX;
@@ -269,7 +278,7 @@ foreach my $id (@ids) {
     
     my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
     $unmatchedCommand .= "--fastq-file $READS_PATH$id/equalized.fq ";
-    $unmatchedCommand .= "--sam-file $READS_PATH$id/$id.sam ";
+    $unmatchedCommand .= "--sam-file /mnt/vol2/public_ribo_human_extras/$id.sam "; # CHANGED
     $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
     my $unmatchedErr = system($unmatchedCommand);
     die "ERROR: call ($unmatchedCommand) failed with status $unmatchedErr. Exiting.\n\n" if $unmatchedErr;

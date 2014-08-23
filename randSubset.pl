@@ -60,7 +60,7 @@ while(my $entry = <$fq_fh>) {
     
     $curEntryNum++;
 }
-
+die "too few entries in original file: only $curEntryNum entries\n" if ($curEntryNum < $N_OUT);
 
 # Print out the reservoir to standard out.
 print(join("\n", @reservoir));
