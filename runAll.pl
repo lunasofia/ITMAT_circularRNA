@@ -290,8 +290,8 @@ foreach my $id (@ids) {
     print "\tSTATUS: Aligning to shuffled exon database ($id).\n" if $VERBOSE;
     my $bwaCommand = $BWA_PATH;
     $bwaCommand .= "bwa aln $EXON_DATABASE ";
-    $bwaCommand .= "$READS_PATH$id/weeded.fq";
-    $bwaCommand .= " > $READS_PATH$id/reads.sai";
+    $bwaCommand .= "$READS_PATH$id/weeded.fq ";
+    $bwaCommand .= "> $READS_PATH$id/reads.sai";
     &run($bwaCommand);
 
     my $bwaCommand2 = $BWA_PATH;
