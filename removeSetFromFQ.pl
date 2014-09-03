@@ -15,23 +15,25 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my ($FQ_FILE, $IDLIST_FILE, $help);
+my ($FQ_FILE, @IDLIST_FILES, $help);
 GetOptions('help|?' => \$help,
 	   'fq-file=s' => \$FQ_FILE,
-	   'idlist-file=s' => \$IDLIST_FILE);
+	   'idlist-file=s' => \@IDLIST_FILES);
 
 &usage if $help;
-&usage unless ($FQ_FILE && $IDLIST_FILE);
+&usage unless ($FQ_FILE && $IDLIST_FILES[0]);
 
 my %idlist = ();
 
 # Read list of IDs into hash
-open my $idlist_fh, '<', $IDLIST_FILE;
-while(<$idlist_fh>) {
-    chomp($_);
-    $idlist{ "\@$_" } = 1;
+foreach my $file (@IDLIST_FILES) {
+    open my $idlist_fh, '<', $file or die "could not open file $file\n";
+    while(<$idlist_fh>) {
+	chomp($_);
+	$idlist{ "\@$_" } = 1;
+    }
+    close $idlist_fh;
 }
-close $idlist_fh;
 
 # Read through fastq and print any entry that
 # does not appear in the hash
@@ -61,12 +63,14 @@ sub usage {
     die "
  Takes in a fastq file and a file of IDs to
  be removed from the fastq file. The IDs should
- be one per line, without @ symbol prefix.
+ be one per line, without @ symbol prefix. Can
+ take in multiple ID files, specified by
+ several --idlist-file flags.
 
  Outputs a fastq with the entries corresponding
  to those IDs removed.
 
- Usage: perl removeSetFromFQ --fq-file=\"file.fq\" --idlist-file=\"file.txt\"
+ Usage: perl removeSetFromFQ --fq-file file.fq --idlist-file file.txt
 
 "
 }
