@@ -166,6 +166,7 @@ if($STAR_PATH) {
         my $starCommand = "${STAR_PATH}STAR ";
 	$starCommand .= "--genomeLoad LoadAndKeep ";
         $starCommand .= "--genomeDir $GENOME_PATH ";
+	$starCommand .= "--outFilterMatchNminOverLread .75 ";
         $starCommand .= "--readFilesIn $READS_PATH$id/${id}.fq ";
         $starCommand .= "--runThreadN $NTHREADS " if $NTHREADS;
         $starCommand .= "--outSAMunmapped Within ";
@@ -278,7 +279,7 @@ foreach my $id (@ids) {
     
     my $unmatchedCommand = "${PERL_PREFIX}unmatchedFromSAM.pl ";
     $unmatchedCommand .= "--fastq-file $READS_PATH$id/equalized.fq ";
-    $unmatchedCommand .= "--sam-file $READS_PATH$id/$id.sam ";
+    $unmatchedCommand .= "--sam-file $READS_PATH$id/$id.sam ";    
     $unmatchedCommand .= "> $READS_PATH$id/weeded.fq";
     &run($unmatchedCommand);
 
