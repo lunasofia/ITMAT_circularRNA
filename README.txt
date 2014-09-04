@@ -46,6 +46,11 @@ pipeline is not specified (by including a path for BLAST). Note that if no
 normalization is desired, this file could be empty. However, the files will
 still be normalized for size.
 
+NOTE: make sure that you have enough space. With the conserve-space option
+specified, the reads directory will take up 3-4 times as much space after
+the pipeline runs than it did with only the fastq files.
+ 
+
 ---------- RUNNING THE PIPELINE ----------
  Necessary Flags:
  --bwa-path </path/>
@@ -136,6 +141,8 @@ The pipeline consists of the following main stages:
    specified margin
 7. Creates a spreadsheet of number of events for a particular
    exon-exon boundary in each sample.
+
+For a flowchart of the pipeline, see CircRNA_Mapping_Workflow.pdf.
 
 
 ---------- OTHER SCRIPTS ----------
