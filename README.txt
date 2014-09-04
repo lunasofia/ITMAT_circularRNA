@@ -4,7 +4,7 @@ Summer 2014
 S. Luna Frank-Fischer
 
 This pipeline searches for evidence of scrambled exons in RNA sequencing
-data.
+data. Information about non-pipeline scripts is at the bottom.
 
 ---------- PREPARING TO RUN THE PIPELINE ----------
 First, if a shuffled exon database has not yet been created, run
@@ -136,6 +136,24 @@ The pipeline consists of the following main stages:
    specified margin
 7. Creates a spreadsheet of number of events for a particular
    exon-exon boundary in each sample.
+
+
+---------- OTHER SCRIPTS ----------
+backwardsPairExons.pl:
+     This script generates the database of reverse exon-exon 
+     junctions.
+lookupBoundary.pl:
+     Given the name of a reverse exon-exon junction and some
+     files (specified by the options list), shows useful info
+     about the junction.
+sortBySum.pl:
+     Given a tab-separated spreadsheet and column(s) to sort
+     on, sorts the rows by the sum of those specified columns.
+sumSpreadsheet.pl:
+     Given a tab-separated spreadsheet, sums each column and
+     prints each out as a row (with the old column headers as
+     row titles).
+
 
 ---------- ABOUT THE PROJECT ----------
 This is my summer internship project. I'm working at the Garret FitzGerald

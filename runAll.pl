@@ -203,7 +203,7 @@ foreach my $id (@ids) {
 	$blastCommand .= "$BLAST_PATH $BLAST_PATH/$RIBO_REF";
 	&run($blastCommand);
 
-	print "\tSTATUS: removing blast-generated temporary files.\n" if $VERBOSE;
+	print "\tSTATUS: removing blast-generated temporary files.\n" if ($VERBOSE && $CONSERVE_SPACE);
 	system("rm $READS_PATH$id/blast.out.1") if $CONSERVE_SPACE;
 	system("rm $READS_PATH$id/temp.1") if $CONSERVE_SPACE;
 
